@@ -34,6 +34,9 @@
     <script>
         const questions = {{ questions | tojson }};
 
+        // 問題をランダムな順番に並べる
+        questions.sort(() => Math.random() - 0.5);
+
         let currentQuestion = 0;
         let correctCount = 0;
 
@@ -47,7 +50,7 @@
                 `先手の持ち駒：${question.hand.先手.join("、") || "なし"}`;
 
             document.getElementById("question-number").textContent =
-                `第${currentQuestion + 1}問`;
+                `第${currentQuestion + 1}問 / 全${questions.length}問`;
 
             // 将棋盤を表示
             showBoard(questions[currentQuestion].board);
