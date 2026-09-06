@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>初段への道</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+    <h1>初段への道</h1>
+
+    <h2 id="question-number"></h2>
+
+    <div id="gote-hand"></div>
+
+    <div class="board" id="board"></div>
+
+    <div id="sente-hand"></div>
+
+    <p id="question"></p>
+
+    <div id="choices"></div>
+
+    <p id="result"></p>
+    <p id="explanation"></p>
+
+    <button id="next-button" style="display: none;" onclick="nextQuestion()">
+        次の問題
+    </button>
+    <button id="restart-button" style="display: none;" onclick="restartGame()">
+        もう一度挑戦
+    </button>
+    <script>
+        const questions = {{ questions | tojson }};
+
+        let currentQuestion = 0;
+        let correctCount = 0;
+
+        function showQuestion() {
+            const question = questions[currentQuestion];
+            // 持ち駒を表示
+            document.getElementById("gote-hand").textContent =
+                `後手の持ち駒：${question.hand.後手.join("、") || "なし"}`;
+
+            document.getElementById("sente-hand").textContent =
+                `先手の持ち駒：${question.hand.先手.join("、") || "なし"}`;
+
+            document.getElementById("question-number").textContent =
+                `第${currentQuestion + 1}問`;
+
+            // 将棋盤を表示
+            showBoard(questions[currentQuestion].board);
+
+            // 問題文を表示
+            document.getElementById("question").textContent =
+                question.question;
+
+            // 選択肢を表示
+            const choicesElement = document.getElementById("choices");
+            choicesElement.innerHTML = "";
+
+            question.choices.forEach((choice, index) => {
+                const button = document.createElement("button");
+
+                button.textContent = choice;
+
+                button.onclick = function() {
+                    checkAnswer(index);
+                };
+
+                choicesElement.appendChild(button);
+            });
+
+            document.getElementById("result").textContent = "";
+            document.getElementById("explanation").textContent = "";
+            document.getElementById("next-button").style.display = "none";
+        }
+
+        function showBoard(board) {
+            const boardElement = document.getElementById("board");
+            boardElement.innerHTML = "";
+
+            board.forEach(row => {
+                row.forEach(piece => {
+                    const square = document.createElement("div");
+
+                    square.className = "square";
+
+                    if (piece !== "") {
+                        const owner = piece.charAt(0);
+                        const pieceName = piece.slice(1);
+
+                        const pieceElement = document.createElement("span");
+                        pieceElement.textContent = pieceName;
+
+                        if (owner === "G") {
+                            pieceElement.classList.add("gote");
+                        }
+
+                        square.appendChild(pieceElement);
+                    }
+
+                    boardElement.appendChild(square);
+                });
+            });
+        }
+
+        function checkAnswer(choice) {
+            const question = questions[currentQuestion];
+
+            // すでに回答済みなら何もしない
+            if (document.getElementById("next-button").style.display === "block") {
+                return;
+            }
+
+            const buttons = document.querySelectorAll("#choices button");
+
+            if (choice === question.answer) {
+                document.getElementById("result").textContent = "正解！";
+                correctCount++;
+
+                buttons[choice].classList.add("correct");
+
+                // 正解手を盤面に反映
+                const move = question.move;
+                const to = move.to;
+
+                if (move.from_hand) {
+                    // 持ち駒から駒を打つ
+                    question.board[to[0]][to[1]] = move.piece;
+
+                    // 持ち駒から使った駒を1枚減らす
+                    const pieceName = move.piece.slice(1);
+                    const hand = question.hand["先手"];
+
+                    const index = hand.indexOf(pieceName);
+
+                    if (index !== -1) {
+                        hand.splice(index, 1);
+                    }
+
+                    document.getElementById("sente-hand").textContent =
+                        `先手の持ち駒：${hand.join("、") || "なし"}`;
+                } else {
+                    // 盤上の駒を動かす場合
+                    const from = move.from;
+
+                    const piece = question.board[from[0]][from[1]];
+
+                    question.board[from[0]][from[1]] = "";
+                    question.board[to[0]][to[1]] = piece;
+                }
+
+                // 盤だけ更新
+                showBoard(question.board);
+            } else {
+                document.getElementById("result").textContent = "不正解！";
+
+                buttons[choice].classList.add("incorrect");
+                buttons[question.answer].classList.add("correct");
+            }
+
+            document.getElementById("explanation").textContent =
+                question.explanation;
+            
+            buttons.forEach(button => {
+                button.disabled = true;
+            });
+
+            document.getElementById("next-button").style.display = "block";
+        }
+
+        function nextQuestion() {
+            currentQuestion++;
+
+            if (currentQuestion < questions.length) {
+                showQuestion();
+            } else {
+                document.getElementById("question-number").textContent =
+                    "結果";
+
+                document.getElementById("question").textContent =
+                    `${questions.length}問中${correctCount}問正解！`;
+
+                document.getElementById("choices").innerHTML = "";
+
+                document.getElementById("result").textContent =
+                    `正答率：${Math.round(correctCount / questions.length * 100)}%`;
+
+                document.getElementById("explanation").textContent = "";
+
+                document.getElementById("next-button").style.display = "none";
+
+                document.getElementById("restart-button").style.display = "block";
+            }
+        }
+
+        function restartGame() {
+            currentQuestion = 0;
+            correctCount = 0;
+
+            // 問題データを最初の状態に戻すためにページを再読み込み
+            location.reload();
+        }
+        showQuestion();
+    </script>
+
+</body>
+</html>
