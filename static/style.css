@@ -243,3 +243,47 @@ h2 {
         font-size: 6vw;
     }
 }
+
+/* 履歴 */
+#history {
+    background: white;
+    padding: 15px;
+    margin-top: 20px;
+    border-radius: 6px;
+}
+
+#history h3 {
+    margin-top: 0;
+}
+
+#history-list p {
+    margin: 8px 0;
+}
+
+/* カテゴリ選択 */
+#category-screen {
+    text-align: center;
+    margin-top: 40px;
+}
+
+#category-buttons {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    margin-top: 30px;
+}
+
+#category-buttons button {
+    width: 300px;
+    padding: 14px 20px;
+    font-size: 18px;
+    cursor: pointer;
+    border: 1px solid #aaa;
+    border-radius: 6px;
+    background: white;
+}
+
+#category-buttons button:hover {
+    background: #eee;
+}

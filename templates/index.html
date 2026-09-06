@@ -10,62 +10,102 @@
 
     <h1>初段への道</h1>
 
-    <h2 id="question-number"></h2>
+    <div id="category-screen">
+        <h2>カテゴリを選択</h2>
 
-    <div id="gote-hand"></div>
-
-    <div class="board-container">
-
-        <div class="file-labels">
-            <span>９</span>
-            <span>８</span>
-            <span>７</span>
-            <span>６</span>
-            <span>５</span>
-            <span>４</span>
-            <span>３</span>
-            <span>２</span>
-            <span>１</span>
+        <div id="category-buttons">
+            <button onclick="startCategory('すべて')">すべて</button>
+            <button onclick="startCategory('手筋')">手筋</button>
+            <button onclick="startCategory('詰めろ・寄せ')">詰めろ・寄せ</button>
         </div>
-
-        <div class="board-with-ranks">
-            <div class="board" id="board"></div>
-
-            <div class="rank-labels">
-                <span>一</span>
-                <span>二</span>
-                <span>三</span>
-                <span>四</span>
-                <span>五</span>
-                <span>六</span>
-                <span>七</span>
-                <span>八</span>
-                <span>九</span>
-            </div>
-        </div>
-
     </div>
 
-    <div id="sente-hand"></div>
+    <div id="game-screen" style="display: none;">
 
-    <p id="question"></p>
+        <h2 id="question-number"></h2>
 
-    <div id="choices"></div>
+        <div id="gote-hand"></div>
 
-    <p id="result"></p>
-    <p id="explanation"></p>
+        <div class="board-container">
 
-    <button id="next-button" style="display: none;" onclick="nextQuestion()">
-        次の問題
-    </button>
-    <button id="restart-button" style="display: none;" onclick="restartGame()">
-        もう一度挑戦
-    </button>
+            <div class="file-labels">
+                <span>９</span>
+                <span>８</span>
+                <span>７</span>
+                <span>６</span>
+                <span>５</span>
+                <span>４</span>
+                <span>３</span>
+                <span>２</span>
+                <span>１</span>
+            </div>
+
+            <div class="board-with-ranks">
+                <div class="board" id="board"></div>
+
+                <div class="rank-labels">
+                    <span>一</span>
+                    <span>二</span>
+                    <span>三</span>
+                    <span>四</span>
+                    <span>五</span>
+                    <span>六</span>
+                    <span>七</span>
+                    <span>八</span>
+                    <span>九</span>
+                </div>
+            </div>
+
+        </div>
+
+        <div id="sente-hand"></div>
+
+        <p id="question"></p>
+
+        <div id="choices"></div>
+
+        <p id="result"></p>
+        <p id="explanation"></p>
+
+        <button id="next-button" style="display: none;" onclick="nextQuestion()">
+            次の問題
+        </button>
+        <button id="restart-button" style="display: none;" onclick="restartGame()">
+            もう一度挑戦
+        </button>
+        <div id="history" style="display: none;">
+            <h3>最高記録</h3>
+            <p id="best-record"></p>
+
+            <h3>これまでの記録</h3>
+            <div id="history-list"></div>
+        </div>
+    </div>
     <script>
-        const questions = {{ questions | tojson }};
+        const allQuestions = {{ questions | tojson }};
 
-        // 問題をランダムな順番に並べる
-        questions.sort(() => Math.random() - 0.5);
+        let questions = [];
+
+        function startCategory(category) {
+            if (category === "すべて") {
+                questions = [...allQuestions];
+            } else {
+                questions = allQuestions.filter(
+                    question => question.category === category
+                );
+            }
+
+            // 問題をランダムな順番に並べる
+            questions.sort(() => Math.random() - 0.5);
+
+            currentQuestion = 0;
+            correctCount = 0;
+
+            document.getElementById("category-screen").style.display = "none";
+            document.getElementById("game-screen").style.display = "block";
+
+            showQuestion();
+        }
 
         let currentQuestion = 0;
         let correctCount = 0;
@@ -224,7 +264,37 @@
                 document.getElementById("explanation").textContent = "";
 
                 document.getElementById("next-button").style.display = "none";
+                // プレイ結果を履歴に保存
+                const history = JSON.parse(localStorage.getItem("shodanRoadHistory") || "[]");
 
+                history.push({
+                    date: new Date().toLocaleString("ja-JP"),
+                    correct: correctCount,
+                    total: questions.length,
+                    rate: Math.round(correctCount / questions.length * 100)
+                });
+
+                localStorage.setItem("shodanRoadHistory", JSON.stringify(history));
+                // 最高記録を表示
+                const bestRecord = history.reduce((best, record) => {
+                    return record.rate > best.rate ? record : best;
+                });
+
+                document.getElementById("best-record").textContent =
+                    `${bestRecord.correct} / ${bestRecord.total}問　${bestRecord.rate}%`;
+
+                // 履歴を表示
+                const historyList = document.getElementById("history-list");
+                historyList.innerHTML = "";
+
+                history.slice().reverse().forEach(record => {
+                    const p = document.createElement("p");
+                    p.textContent =
+                        `${record.date}　${record.correct} / ${record.total}問　${record.rate}%`;
+                    historyList.appendChild(p);
+                });
+
+                document.getElementById("history").style.display = "block";
                 document.getElementById("restart-button").style.display = "block";
             }
         }
@@ -236,8 +306,6 @@
             // 問題データを最初の状態に戻すためにページを再読み込み
             location.reload();
         }
-        showQuestion();
     </script>
-
 </body>
 </html>
