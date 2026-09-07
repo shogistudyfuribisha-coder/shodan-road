@@ -80,7 +80,9 @@
 
         <p id="result"></p>
         <p id="explanation"></p>
-
+        <button id="show-answer-button" style="display: none;" onclick="showCorrectMove()">
+            正解手を見る
+        </button>
         <button id="next-button" style="display: none;" onclick="nextQuestion()">
             次の問題
         </button>
@@ -139,7 +141,10 @@
 
         function showQuestion() {
             const question = questions[currentQuestion];
-
+            document.getElementById("show-answer-button").style.display =
+                "none";
+            document.getElementById("show-answer-button").disabled =
+                false;
             currentShogiBoard =
                 shogiBoard.createShogiBoard(question, ShogiJS);
 
@@ -873,6 +878,15 @@
                 button.disabled = true;
             });
 
+            // 不正解の場合だけ「正解手を見る」を表示
+            if (
+                document.getElementById("result").textContent ===
+                "不正解！"
+            ) {
+                document.getElementById("show-answer-button").style.display =
+                    "block";
+            }
+
             document.getElementById("next-button").style.display =
                 "block";
         }
@@ -997,6 +1011,75 @@
 
             // 問題データを最初の状態に戻すためにページを再読み込み
             location.reload();
+        }
+        function showCorrectMove() {
+            const question = questions[currentQuestion];
+
+            if (!question || !question.move) return;
+
+            // 問題開始時の盤面に戻す
+            currentShogiBoard = shogiBoard.createShogiBoard(
+                question,
+                ShogiJS
+            );
+
+            const move = question.move;
+
+            try {
+                if (move.from_hand) {
+                    const color =
+                        move.piece.startsWith("S")
+                            ? ShogiJS.Color.Black
+                            : ShogiJS.Color.White;
+
+                    const kind =
+                        Object.entries(
+                            shogiBoard.PIECE_NAME_MAP
+                        ).find(([key, value]) => {
+                            return (
+                                `S${value}` === move.piece ||
+                                `G${value}` === move.piece
+                            );
+                        })?.[0];
+
+                    if (!kind) return;
+
+                    currentShogiBoard.drop(
+                        move.to[0],
+                        move.to[1],
+                        kind,
+                        color
+                    );
+                } else {
+                    currentShogiBoard.move(
+                        move.from[0],
+                        move.from[1],
+                        move.to[0],
+                        move.to[1],
+                        move.promote || false
+                    );
+                }
+
+                // 正解手のハイライトを解除
+                correctMoveHint = null;
+
+                // 選択状態を解除
+                selectedSquare = null;
+                selectedHandPiece = null;
+                pendingBoardMove = null;
+                legalMoves = [];
+                legalDrops = [];
+
+                showBoardFromShogi();
+                showHandsFromShogi();
+
+                // ボタンを無効化
+                document.getElementById("show-answer-button").disabled =
+                    true;
+
+            } catch (error) {
+                console.error("正解手を再生できません:", error);
+            }
         }
     </script>
 </body>
