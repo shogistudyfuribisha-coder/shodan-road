@@ -107,6 +107,8 @@
         let pendingBoardMove = null;
         let selectedHandPiece = null;
         let legalMoves = [];
+        let legalDrops = [];
+        let correctMoveHint = null;
         function startCategory(category) {
             if (category === "すべて") {
                 questions = [...allQuestions];
@@ -146,6 +148,7 @@
             selectedHandPiece = null;
             legalMoves = [];
             legalDrops = [];
+            correctMoveHint = null;
 
             document.getElementById("question-number").textContent =
                 `第${currentQuestion + 1}問 / 全${questions.length}問`;
@@ -266,6 +269,38 @@
                         button.classList.add("selected-hand");
                     }
 
+                    // 不正解時の正解手が持ち駒からの打ちの場合、
+                    // 正解に使う持ち駒を強調表示する
+                    if (
+                        correctMoveHint &&
+                        correctMoveHint.from_hand &&
+                        correctMoveHint.piece
+                    ) {
+                        const correctPiece =
+                            correctMoveHint.piece;
+
+                        const correctColor =
+                            correctPiece.startsWith("S")
+                                ? ShogiJS.Color.Black
+                                : ShogiJS.Color.White;
+
+                        const correctKind =
+                            Object.entries(
+                                shogiBoard.PIECE_NAME_MAP
+                            ).find(
+                                ([key, value]) =>
+                                    `S${value}` === correctPiece ||
+                                    `G${value}` === correctPiece
+                            )?.[0];
+
+                        if (
+                            correctKind === kind &&
+                            correctColor === color
+                        ) {
+                            button.classList.add("correct-hand");
+                        }
+                    }
+
                     button.onclick = function() {
                         selectHandPiece(kind, color);
                     };
@@ -315,6 +350,33 @@
 
                     if (isLegalDropDestination) {
                         square.classList.add("legal-move");
+                    }
+                    if (correctMoveHint) {
+                        // 通常の指し手
+                        if (!correctMoveHint.from_hand) {
+                            if (
+                                correctMoveHint.from[0] === x &&
+                                correctMoveHint.from[1] === y
+                            ) {
+                                square.classList.add("correct-move-from");
+                            }
+
+                            if (
+                                correctMoveHint.to[0] === x &&
+                                correctMoveHint.to[1] === y
+                            ) {
+                                square.classList.add("correct-move-to");
+                            }
+                        }
+                        // 持ち駒を打つ手
+                        else {
+                            if (
+                                correctMoveHint.to[0] === x &&
+                                correctMoveHint.to[1] === y
+                            ) {
+                                square.classList.add("correct-move-to");
+                            }
+                        }
                     }
                     square.onclick = function() {
                         selectSquare(x, y);
@@ -794,11 +856,14 @@
             showHandsFromShogi();
         }
         function handleIncorrectAnswer(question, buttons, choice) {
-            document.getElementById("result").textContent =
-                "不正解！";
-
+            document.getElementById("result").textContent = "不正解！";
             buttons[choice].classList.add("incorrect");
             buttons[question.answer].classList.add("correct");
+
+            correctMoveHint = question.move;
+
+            showBoardFromShogi();
+            showHandsFromShogi();
         }
         function finishQuestion(question, buttons) {
             document.getElementById("explanation").textContent =
@@ -828,8 +893,16 @@
 
                 correctCount++;
             } else {
-                document.getElementById("result").textContent =
-                    "不正解！";
+                document.getElementById("result").textContent = "不正解！";
+
+                // 問題開始時の盤面に戻す
+                currentShogiBoard = shogiBoard.createShogiBoard(
+                    question,
+                    ShogiJS
+                );
+
+                // 正解手を表示
+                correctMoveHint = question.move;
             }
 
             finishQuestion(question, buttons);
