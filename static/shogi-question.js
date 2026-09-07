@@ -26,13 +26,22 @@ function isCorrectMove(userMove, correctMove) {
 
 const shogiQuestion = {
     isCorrectMove,
-    canPromote
+    canPromote,
+    canSelectPiece
 };
 
 if (typeof module !== "undefined") {
     module.exports = shogiQuestion;
 } else {
     globalThis.shogiQuestion = shogiQuestion;
+}
+
+function canSelectPiece(piece, turn, ShogiAPI) {
+    if (!piece) {
+        return false;
+    }
+
+    return piece.color === turn;
 }
 
 function canPromote(

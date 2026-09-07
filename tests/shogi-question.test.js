@@ -167,4 +167,27 @@ describe("canPromote", () => {
       expect(shogiQuestion.isCorrectMove(userMove, correctMove)).toBe(false);
     });
   });
+  describe("canSelectPiece", () => {
+    test("自分の駒は選択できる", () => {
+      const piece = new Piece("+FU");
+
+      expect(shogiQuestion.canSelectPiece(piece, Color.Black, ShogiAPI)).toBe(
+        true,
+      );
+    });
+
+    test("相手の駒は選択できない", () => {
+      const piece = new Piece("-FU");
+
+      expect(shogiQuestion.canSelectPiece(piece, Color.Black, ShogiAPI)).toBe(
+        false,
+      );
+    });
+
+    test("駒がないマスは選択できない", () => {
+      expect(shogiQuestion.canSelectPiece(null, Color.Black, ShogiAPI)).toBe(
+        false,
+      );
+    });
+  });
 });

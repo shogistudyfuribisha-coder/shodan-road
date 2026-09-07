@@ -452,7 +452,13 @@
             const piece = currentShogiBoard.get(x, y);
 
             if (!selectedSquare) {
-                if (!piece) {
+                if (
+                    !shogiQuestion.canSelectPiece(
+                        piece,
+                        currentShogiBoard.turn,
+                        ShogiJS
+                    )
+                ) {
                     return;
                 }
 
@@ -485,7 +491,8 @@
                     from.y,
                     to.x,
                     to.y,
-                    ShogiJS
+                    ShogiJS,
+                    currentShogiBoard
                 )
             ) {
                 pendingBoardMove = {
@@ -603,54 +610,6 @@
             choicesElement.appendChild(noPromoteButton);
         }
 
-        function canPromote(fromX, fromY, toX, toY, ShogiAPI) {
-            const piece = currentShogiBoard.get(fromX, fromY);
-
-            if (!piece) {
-                return false;
-            }
-
-            // 歩・香・桂・銀・角・飛以外は成れない
-            const promotableKinds = [
-                "FU",
-                "KY",
-                "KE",
-                "GI",
-                "KA",
-                "HI"
-            ];
-
-            if (!promotableKinds.includes(piece.kind)) {
-                return false;
-            }
-
-            // すでに成っている駒は成れない
-            const promotedKinds = [
-                "TO",
-                "NY",
-                "NK",
-                "NG",
-                "UM",
-                "RY"
-            ];
-
-            if (promotedKinds.includes(piece.kind)) {
-                return false;
-            }
-
-            // 先手は1〜3段、後手は7〜9段が敵陣
-            const enemyZone =
-                piece.color === ShogiAPI.Color.Black
-                    ? toY <= 3
-                    : toY >= 7;
-
-            const fromEnemyZone =
-                piece.color === ShogiAPI.Color.Black
-                    ? fromY <= 3
-                    : fromY >= 7;
-
-            return enemyZone || fromEnemyZone;
-        }
         
         function checkAnswer(choice) {
             const question = questions[currentQuestion];
