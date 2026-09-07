@@ -280,8 +280,8 @@ h2 {
     gap: 12px;
     margin-top: 30px;
 }
-
-#category-buttons button {
+#category-buttons button,
+#learning-buttons button {
     width: 300px;
     padding: 14px 20px;
     font-size: 18px;
@@ -412,4 +412,11 @@ button.correct-hand {
 
 .weak-question p {
     margin: 5px 0;
+}
+#learning-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
 }
