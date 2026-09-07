@@ -187,7 +187,7 @@
             document.getElementById("question-number").textContent =
                 `第${currentQuestion + 1}問 / 全${questions.length}問`;
 
-            showBoard(question.board);
+            showBoardFromShogi();
             showHandsFromShogi();
 
             document.getElementById("question").textContent =
@@ -358,21 +358,21 @@
             );
         }
 
-        function syncBoardFromShogi(question) {
+        function showBoardFromShogi() {
+            const board = [];
 
-            // question.board をすべて空にする
             for (let row = 0; row < 9; row++) {
-                for (let col = 0; col < 9; col++) {
-                    question.board[row][col] = "";
-                }
-            }
+                board[row] = [];
 
-            // shogi.js の盤面を question.board にコピー
-            for (let y = 1; y <= 9; y++) {
-                for (let x = 1; x <= 9; x++) {
-                    const piece = currentShogiBoard.get(x, y);
+                for (let col = 0; col < 9; col++) {
+                    const { x, y } =
+                        questionBoardToShogi(row, col);
+
+                    const piece =
+                        currentShogiBoard.get(x, y);
 
                     if (piece === null) {
+                        board[row][col] = "";
                         continue;
                     }
 
@@ -381,22 +381,22 @@
                             ? "S"
                             : "G";
 
-                    const pieceName = PIECE_NAME_MAP[piece.kind];
+                    const pieceName =
+                        PIECE_NAME_MAP[piece.kind];
 
                     if (!pieceName) {
-                        throw new Error(`未対応の駒: ${piece.kind}`);
+                        throw new Error(
+                            `未対応の駒: ${piece.kind}`
+                        );
                     }
 
-                    // shogi.js → question.board
-                    const row = y - 1;
-                    const col = 9 - x;
-
-                    question.board[row][col] =
+                    board[row][col] =
                         owner + pieceName;
                 }
             }
-        }
 
+            showBoard(board);
+        }
         function showBoard(board) {
             const boardElement = document.getElementById("board");
             boardElement.innerHTML = "";
@@ -497,8 +497,7 @@
                 executeCorrectMove(question.move);
 
                 // shogi.js の状態を画面に反映
-                syncBoardFromShogi(question);
-                showBoard(question.board);
+                showBoardFromShogi();
                 showHandsFromShogi();
 
             } else {
