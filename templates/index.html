@@ -341,6 +341,11 @@
                 return;
             }
 
+            // 成り選択待ちの場合は持ち駒を操作しない
+            if (pendingBoardMove !== null) {
+                return;
+            }
+
             // 自分の手番ではない持ち駒は選択できない
             if (currentShogiBoard.turn !== color) {
                 return;
@@ -363,6 +368,12 @@
             showBoardFromShogi();
         }
         function executeBoardDrop(handPiece, to) {
+            // 問題回答済みなら操作しない
+            if (
+                document.getElementById("next-button").style.display === "block"
+            ) {
+                return;
+            }
             try {
                 currentShogiBoard.drop(
                     to.x,
@@ -411,6 +422,12 @@
             }
         }
         function selectSquare(x, y) {
+            // 問題回答済みなら操作しない
+            if (
+                document.getElementById("next-button").style.display === "block"
+            ) {
+                return;
+            }
             // 成り選択待ちの場合は盤面を操作しない
             if (pendingBoardMove !== null) {
                 return;
@@ -486,6 +503,12 @@
         }
         
         function executeBoardMove(from, to, promote) {
+            // 問題回答済みなら操作しない
+            if (
+                document.getElementById("next-button").style.display === "block"
+            ) {
+                return;
+            }
             try {
                 currentShogiBoard.move(
                     from.x,
@@ -713,7 +736,11 @@
         }
         function handleBoardAnswer(question, isCorrect) {
             const buttons =
-                document.querySelectorAll(".choice-button");
+                document.querySelectorAll("#choices button");
+
+            selectedSquare = null;
+            selectedHandPiece = null;
+            pendingBoardMove = null;
 
             if (isCorrect) {
                 document.getElementById("result").textContent =
@@ -726,6 +753,9 @@
             }
 
             finishQuestion(question, buttons);
+
+            showBoardFromShogi();
+            showHandsFromShogi();
         }
         function nextQuestion() {
             currentQuestion++;
