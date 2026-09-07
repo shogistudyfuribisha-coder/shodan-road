@@ -493,6 +493,9 @@
                 buttons[question.answer].classList.add("correct");
             }
 
+            finishQuestion(question, buttons);
+        }
+        function finishQuestion(question, buttons) {
             document.getElementById("explanation").textContent =
                 question.explanation;
 
