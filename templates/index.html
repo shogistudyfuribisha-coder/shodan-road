@@ -48,6 +48,7 @@
         <h3>苦手な問題</h3>
         <div id="weak-questions"></div>
 
+        <button onclick="startWeakReview()">苦手問題を復習する</button>
         <button onclick="backToCategoryScreen()">カテゴリ選択に戻る</button>
     </div>
     <div id="game-screen" style="display: none;">
@@ -182,6 +183,47 @@
             correctCount = 0;
 
             document.getElementById("category-screen").style.display = "none";
+            document.getElementById("game-screen").style.display = "block";
+
+            showQuestion();
+        }
+
+        function startWeakReview() {
+            const history =
+                JSON.parse(
+                    localStorage.getItem("shodanRoadQuestionHistory") || "{}"
+                );
+
+            const weakQuestions = allQuestions.filter(question => {
+                const result = history[String(question.id)];
+
+                if (!result) return false;
+
+                const total = result.correct + result.incorrect;
+
+                if (total === 0) return false;
+
+                const rate = result.correct / total * 100;
+
+                return rate < 70;
+            });
+
+            if (weakQuestions.length === 0) {
+                alert("現在、苦手な問題はありません。");
+                return;
+            }
+
+            questions = [...weakQuestions];
+
+            // 苦手問題もランダムな順番にする
+            questions.sort(() => Math.random() - 0.5);
+
+            currentQuestion = 0;
+            correctCount = 0;
+            questionResults = [];
+
+            document.getElementById("category-screen").style.display = "none";
+            document.getElementById("learning-status-screen").style.display = "none";
             document.getElementById("game-screen").style.display = "block";
 
             showQuestion();
