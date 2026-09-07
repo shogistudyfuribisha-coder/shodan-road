@@ -404,17 +404,16 @@
             }
 
             if (
-                !shogiQuestion.isLegalDrop(
-                    currentShogiBoard,
-                    to,
-                    handPiece.kind,
-                    handPiece.color
-                )
+                !legalDrops.some(drop => {
+                    return (
+                        drop.kind === handPiece.kind &&
+                        drop.color === handPiece.color &&
+                        drop.to.x === to.x &&
+                        drop.to.y === to.y
+                    );
+                })
             ) {
-                console.log("不合法な着手（王手放置または打ち歩詰め）のため駒を打てません");
-                selectedHandPiece = null;
-                showBoardFromShogi();
-                showHandsFromShogi();
+                console.log("不合法な打ち場所です");
                 return;
             }
 
@@ -480,6 +479,31 @@
 
             // 持ち駒を選択している場合
             if (selectedHandPiece !== null) {
+                const clickedPiece = currentShogiBoard.get(x, y);
+
+                // 自分の駒をクリックした場合は、
+                // 持ち駒の選択を解除して、その駒を新しく選択する
+                if (
+                    clickedPiece &&
+                    clickedPiece.color === currentShogiBoard.turn
+                ) {
+                    selectedHandPiece = null;
+                    legalDrops = [];
+
+                    selectedSquare = { x, y };
+
+                    legalMoves = shogiQuestion.getLegalMovesFrom(
+                        currentShogiBoard,
+                        selectedSquare
+                    );
+
+                    showHandsFromShogi();
+                    showBoardFromShogi();
+
+                    return;
+                }
+
+                // それ以外は持ち駒を打つ操作
                 const to = {
                     x,
                     y
