@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-
+    <script src="{{ url_for('static', filename='shogi.js') }}"></script>
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-LM9GCJ9CB6"></script>
     <script>
@@ -28,7 +28,7 @@
             <button onclick="startCategory('すべて')">すべて</button>
             <button onclick="startCategory('手筋')">手筋</button>
             <button onclick="startCategory('詰めろ・寄せ')">詰めろ・寄せ</button>
-            <!-- <button onclick="startCategory('テスト')">テスト</button> -->
+            <button onclick="startCategory('テスト')">テスト</button>
         </div>
     </div>
 
@@ -94,6 +94,10 @@
         </div>
     </div>
     <script>
+        console.log(ShogiJS);
+        console.log(ShogiJS.Shogi);
+        console.log(ShogiJS.Color);
+        console.log(ShogiJS.Piece);
         const allQuestions = {{ questions | tojson }};
 
         let questions = [];
@@ -108,7 +112,7 @@
             }
 
             // 問題をランダムな順番に並べる
-            questions.sort(() => Math.random() - 0.5);
+            // questions.sort(() => Math.random() - 0.5);
 
             currentQuestion = 0;
             correctCount = 0;
@@ -142,7 +146,9 @@
                 `第${currentQuestion + 1}問 / 全${questions.length}問`;
 
             // 将棋盤を表示
-            showBoard(questions[currentQuestion].board);
+            window.currentShogiBoard = createShogiBoard(question);
+
+            showBoard(question.board);
 
             // 問題文を表示
             document.getElementById("question").textContent =
@@ -167,6 +173,235 @@
             document.getElementById("result").textContent = "";
             document.getElementById("explanation").textContent = "";
             document.getElementById("next-button").style.display = "none";
+        }
+
+        function showHandsFromShogi() {
+            const kindMap = {
+                "FU": "歩",
+                "KY": "香",
+                "KE": "桂",
+                "GI": "銀",
+                "KI": "金",
+                "KA": "角",
+                "HI": "飛",
+                "OU": "玉"
+            };
+
+            const senteHand = currentShogiBoard.hands[ShogiJS.Color.Black]
+                .map(piece => kindMap[piece.kind]);
+
+            const goteHand = currentShogiBoard.hands[ShogiJS.Color.White]
+                .map(piece => kindMap[piece.kind]);
+
+            document.getElementById("sente-hand").textContent =
+                `先手の持ち駒：${senteHand.join("、") || "なし"}`;
+
+            document.getElementById("gote-hand").textContent =
+                `後手の持ち駒：${goteHand.join("、") || "なし"}`;
+        }
+
+        function createShogiBoard(question) {
+            const board = new ShogiJS.Shogi();
+
+            const kindMap = {
+                "歩": "FU",
+                "香": "KY",
+                "桂": "KE",
+                "銀": "GI",
+                "金": "KI",
+                "角": "KA",
+                "飛": "HI",
+                "玉": "OU",
+                "と": "TO",
+                "成香": "NY",
+                "成桂": "NK",
+                "成銀": "NG",
+                "馬": "UM",
+                "龍": "RY"
+            };
+
+            // 編集モード開始
+            board.editMode(true);
+
+            // 初期盤面をすべて空にする
+            for (let y = 1; y <= 9; y++) {
+                for (let x = 1; x <= 9; x++) {
+                    board.set(x, y, null);
+                }
+            }
+
+            // 盤上の駒を設定
+            question.board.forEach((row, rowIndex) => {
+                row.forEach((piece, colIndex) => {
+                    if (piece === "") {
+                        return;
+                    }
+
+                    const owner = piece.charAt(0);
+                    const pieceName = piece.slice(1);
+
+                    const color =
+                        owner === "S"
+                            ? ShogiJS.Color.Black
+                            : ShogiJS.Color.White;
+
+                    const kind = kindMap[pieceName];
+
+                    if (!kind) {
+                        throw new Error(`未対応の駒: ${pieceName}`);
+                    }
+
+                    // question.board
+                    // row = 段
+                    // col = 筋（9筋→1筋）
+                    //
+                    // shogi.js
+                    // x = 筋
+                    // y = 段
+
+                    const x = 9 - colIndex;
+                    const y = rowIndex + 1;
+
+                    const csa =
+                        color === ShogiJS.Color.Black
+                            ? `+${kind}`
+                            : `-${kind}`;
+
+                    board.set(
+                        x,
+                        y,
+                        new ShogiJS.Piece(csa)
+                    );
+                });
+            });
+
+            // 持ち駒を設定
+            const hands = [
+                {
+                    pieces: question.hand.先手,
+                    color: ShogiJS.Color.Black
+                },
+                {
+                    pieces: question.hand.後手,
+                    color: ShogiJS.Color.White
+                }
+            ];
+
+            hands.forEach(hand => {
+                hand.pieces.forEach(pieceName => {
+                    const kind = kindMap[pieceName];
+
+                    if (!kind) {
+                        throw new Error(`未対応の持ち駒: ${pieceName}`);
+                    }
+
+                    const csa =
+                        hand.color === ShogiJS.Color.Black
+                            ? `+${kind}`
+                            : `-${kind}`;
+
+                    board.pushToHand(
+                        new ShogiJS.Piece(csa)
+                    );
+                });
+            });
+            console.log("登録する持ち駒:", hands);
+            console.log("登録後のhands:", board.hands);
+
+            // 手番を設定
+            const move = question.move;
+
+            if (move.from_hand) {
+                board.setTurn(ShogiJS.Color.Black);
+            } else {
+                const from = move.from;
+
+                // move.from は [筋, 段]
+                // question.board は [段][列]
+                // なので変換する
+
+                const file = from[0];  // 6
+                const rank = from[1];  // 9
+
+                const row = rank - 1;
+                const col = 9 - file;
+
+                const piece = question.board[row][col];
+
+                if (!piece) {
+                    throw new Error(
+                        `移動元に駒がありません: ${file}${rank}`
+                    );
+                }
+
+                const owner = piece.charAt(0);
+
+                board.setTurn(
+                    owner === "S"
+                        ? ShogiJS.Color.Black
+                        : ShogiJS.Color.White
+                );
+            }
+
+            // 編集モード終了
+            board.editMode(false);
+
+            return board;
+        }
+        
+        function syncBoardFromShogi(question) {
+            const kindMap = {
+                "FU": "歩",
+                "KY": "香",
+                "KE": "桂",
+                "GI": "銀",
+                "KI": "金",
+                "KA": "角",
+                "HI": "飛",
+                "OU": "玉",
+                "TO": "と",
+                "NY": "成香",
+                "NK": "成桂",
+                "NG": "成銀",
+                "UM": "馬",
+                "RY": "龍"
+            };
+
+            // question.board をすべて空にする
+            for (let row = 0; row < 9; row++) {
+                for (let col = 0; col < 9; col++) {
+                    question.board[row][col] = "";
+                }
+            }
+
+            // shogi.js の盤面を question.board にコピー
+            for (let y = 1; y <= 9; y++) {
+                for (let x = 1; x <= 9; x++) {
+                    const piece = currentShogiBoard.get(x, y);
+
+                    if (piece === null) {
+                        continue;
+                    }
+
+                    const owner =
+                        piece.color === ShogiJS.Color.Black
+                            ? "S"
+                            : "G";
+
+                    const pieceName = kindMap[piece.kind];
+
+                    if (!pieceName) {
+                        throw new Error(`未対応の駒: ${piece.kind}`);
+                    }
+
+                    // shogi.js → question.board
+                    const row = y - 1;
+                    const col = 9 - x;
+
+                    question.board[row][col] =
+                        owner + pieceName;
+                }
+            }
         }
 
         function showBoard(board) {
@@ -214,38 +449,53 @@
 
                 buttons[choice].classList.add("correct");
 
-                // 正解手を盤面に反映
+                // 正解手を shogi.js で実行
                 const move = question.move;
-                const to = move.to;
 
                 if (move.from_hand) {
                     // 持ち駒から駒を打つ
-                    question.board[to[0]][to[1]] = move.piece;
+                    const to = move.to;
 
-                    // 持ち駒から使った駒を1枚減らす
                     const pieceName = move.piece.slice(1);
-                    const hand = question.hand["先手"];
 
-                    const index = hand.indexOf(pieceName);
+                    const kindMap = {
+                        "歩": "FU",
+                        "香": "KY",
+                        "桂": "KE",
+                        "銀": "GI",
+                        "金": "KI",
+                        "角": "KA",
+                        "飛": "HI"
+                    };
 
-                    if (index !== -1) {
-                        hand.splice(index, 1);
-                    }
+                    const kind = kindMap[pieceName];
 
-                    document.getElementById("sente-hand").textContent =
-                        `先手の持ち駒：${hand.join("、") || "なし"}`;
+                    currentShogiBoard.drop(
+                        to[0],
+                        to[1],
+                        kind,
+                        ShogiJS.Color.Black
+                    );
+                    syncBoardFromShogi(question);
+                    showHandsFromShogi();
+                    showBoard(question.board);
                 } else {
-                    // 盤上の駒を動かす場合
+                    // 盤上の駒を動かす
                     const from = move.from;
+                    const to = move.to;
 
-                    const piece = question.board[from[0]][from[1]];
+                    currentShogiBoard.move(
+                        from[0],
+                        from[1],
+                        to[0],
+                        to[1],
+                        move.promote || false
+                    );
 
-                    question.board[from[0]][from[1]] = "";
-                    question.board[to[0]][to[1]] = piece;
+                    syncBoardFromShogi(question);
+                    showHandsFromShogi();
+                    showBoard(question.board);
                 }
-
-                // 盤だけ更新
-                showBoard(question.board);
             } else {
                 document.getElementById("result").textContent = "不正解！";
 
