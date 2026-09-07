@@ -94,10 +94,6 @@
         </div>
     </div>
     <script>
-        console.log(ShogiJS);
-        console.log(ShogiJS.Shogi);
-        console.log(ShogiJS.Color);
-        console.log(ShogiJS.Piece);
         const allQuestions = {{ questions | tojson }};
 
         const PIECE_KIND_MAP = {
@@ -135,6 +131,9 @@
         };
 
         let questions = [];
+        let currentQuestion = 0;
+        let correctCount = 0;
+        let currentShogiBoard = null;
         function questionBoardToShogi(row, col) {
             return {
                 x: 9 - col,
@@ -147,6 +146,11 @@
                 col: 9 - x
             };
         }
+        function ownerToColor(owner) {
+            return owner === "S"
+                ? ShogiJS.Color.Black
+                : ShogiJS.Color.White;
+        }
         function startCategory(category) {
             if (category === "すべて") {
                 questions = [...allQuestions];
@@ -157,7 +161,7 @@
             }
 
             // 問題をランダムな順番に並べる
-            // questions.sort(() => Math.random() - 0.5);
+            questions.sort(() => Math.random() - 0.5);
 
             currentQuestion = 0;
             correctCount = 0;
@@ -167,9 +171,6 @@
 
             showQuestion();
         }
-
-        let currentQuestion = 0;
-        let correctCount = 0;
 
         const params = new URLSearchParams(window.location.search);
         const category = params.get("category");
@@ -274,8 +275,10 @@
                     const { x, y } =
                         questionBoardToShogi(rowIndex, colIndex);
 
+                    const color = ownerToColor(owner);
+
                     const csa =
-                        owner === "S"
+                        color === ShogiJS.Color.Black
                             ? `+${kind}`
                             : `-${kind}`;
 
@@ -328,9 +331,7 @@
                 const owner = move.piece.charAt(0);
 
                 board.setTurn(
-                    owner === "S"
-                        ? ShogiJS.Color.Black
-                        : ShogiJS.Color.White
+                    ownerToColor(owner)
                 );
 
                 return;
@@ -352,9 +353,7 @@
             const owner = piece.charAt(0);
 
             board.setTurn(
-                owner === "S"
-                    ? ShogiJS.Color.Black
-                    : ShogiJS.Color.White
+                ownerToColor(owner)
             );
         }
 
@@ -431,10 +430,8 @@
                 );
             }
 
-            const color =
-                move.piece.charAt(0) === "S"
-                    ? ShogiJS.Color.Black
-                    : ShogiJS.Color.White;
+            const owner = move.piece.charAt(0);
+            const color = ownerToColor(owner);
 
             currentShogiBoard.drop(
                 file,
@@ -593,8 +590,6 @@
             showHistory(history);
         }
         function restartGame() {
-            currentQuestion = 0;
-            correctCount = 0;
 
             // 問題データを最初の状態に戻すためにページを再読み込み
             location.reload();
