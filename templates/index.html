@@ -255,22 +255,86 @@
         function selectSquare(x, y) {
             const piece = currentShogiBoard.get(x, y);
 
-            if (piece === null) {
+            if (!selectedSquare) {
+                if (!piece) {
+                    return;
+                }
+
+                selectedSquare = { x, y };
+
+                showBoardFromShogi();
                 return;
             }
 
-            if (selectedSquare !== null) {
+            if (selectedSquare.x === x && selectedSquare.y === y) {
+                selectedSquare = null;
+
+                showBoardFromShogi();
                 return;
             }
 
-            selectedSquare = {
-                x: x,
-                y: y
+            const from = {
+                x: selectedSquare.x,
+                y: selectedSquare.y
             };
 
-            showBoardFromShogi();
-        }
+            const to = {
+                x,
+                y
+            };
 
+            const userMove = {
+                from,
+                to
+            };
+
+            try {
+                currentShogiBoard.move(
+                    from.x,
+                    from.y,
+                    to.x,
+                    to.y,
+                    false
+                );
+
+                selectedSquare = null;
+
+                if (
+                    isCorrectMove(
+                        userMove,
+                        questions[currentQuestion].move
+                    )
+                ) {
+                    handleCorrectAnswer(
+                        questions[currentQuestion],
+                        document.querySelectorAll(".choice-button"),
+                        null
+                    );
+                } else {
+                    handleIncorrectAnswer(
+                        questions[currentQuestion],
+                        document.querySelectorAll(".choice-button")
+                    );
+                }
+
+                showBoardFromShogi();
+
+            } catch (error) {
+                console.log("駒を移動できません:", error);
+            }
+        }
+        function isCorrectMove(userMove, correctMove) {
+            if (correctMove.from_hand) {
+                return false;
+            }
+
+            return (
+                userMove.from.x === correctMove.from[0] &&
+                userMove.from.y === correctMove.from[1] &&
+                userMove.to.x === correctMove.to[0] &&
+                userMove.to.y === correctMove.to[1]
+            );
+        }
         function checkAnswer(choice) {
             const question = questions[currentQuestion];
 
