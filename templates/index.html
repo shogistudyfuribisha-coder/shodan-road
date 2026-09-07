@@ -145,6 +145,7 @@
             pendingBoardMove = null;
             selectedHandPiece = null;
             legalMoves = [];
+            legalDrops = [];
 
             document.getElementById("question-number").textContent =
                 `第${currentQuestion + 1}問 / 全${questions.length}問`;
@@ -308,6 +309,13 @@
                     if (isLegalDestination) {
                         square.classList.add("legal-move");
                     }
+                    const isLegalDropDestination = legalDrops.some(drop => {
+                        return drop.to.x === x && drop.to.y === y;
+                    });
+
+                    if (isLegalDropDestination) {
+                        square.classList.add("legal-move");
+                    }
                     square.onclick = function() {
                         selectSquare(x, y);
                     };
@@ -375,7 +383,10 @@
                 kind,
                 color
             };
-
+            legalDrops = shogiQuestion.getLegalDrops(
+                currentShogiBoard,
+                color
+            );
             console.log(
                 "持ち駒を選択:",
                 selectedHandPiece
@@ -438,6 +449,7 @@
                 console.log("正解:", isCorrect);
 
                 selectedHandPiece = null;
+                legalDrops = [];
 
                 handleBoardAnswer(
                     questions[currentQuestion],
@@ -495,6 +507,8 @@
                 }
 
                 selectedSquare = { x, y };
+
+                legalDrops = [];
 
                 legalMoves = shogiQuestion.getLegalMovesFrom(
                     currentShogiBoard,
@@ -773,6 +787,7 @@
             selectedHandPiece = null;
             pendingBoardMove = null;
             legalMoves = [];
+            legalDrops = [];
 
             if (isCorrect) {
                 const isMate = shogiQuestion.isCheckmate(currentShogiBoard);
