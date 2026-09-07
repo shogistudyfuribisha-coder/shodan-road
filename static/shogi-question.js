@@ -35,7 +35,8 @@ const shogiQuestion = {
     isLegalMove,
     isLegalDrop,
     canEvadeCheckByMove,
-    canEvadeCheckByDrop
+    canEvadeCheckByDrop,
+    isCheckmate
 };
 
 if (typeof module !== "undefined") {
@@ -187,4 +188,59 @@ function canEvadeCheckByMove(board, from, to, promote) {
 function canEvadeCheckByDrop(board, to, kind, color) {
     return isLegalDrop(board, to, kind, color);
 }
+
+function isCheckmate(board, color) {
+    const targetColor = color !== undefined ? color : board.turn;
+    const originalTurn = board.turn;
+    const needRestoreTurn = board.turn !== targetColor;
+
+    if (needRestoreTurn) {
+        board.turn = targetColor;
+    }
+
+    try {
+        // 1. 王手がかかっていなければ詰みではない
+        if (!board.isCheck(targetColor)) {
+            return false;
+        }
+
+        // 2. 盤上の自駒の合法手を探索（1手でも見つかれば詰みではない）
+        for (let x = 1; x <= 9; x++) {
+            for (let y = 1; y <= 9; y++) {
+                const piece = board.get(x, y);
+                if (!piece || piece.color !== targetColor) {
+                    continue;
+                }
+
+                const pseudoMoves = board.getMovesFrom(x, y);
+                for (let i = 0; i < pseudoMoves.length; i++) {
+                    const move = pseudoMoves[i];
+                    if (
+                        isLegalMove(board, { x, y }, move.to, false) ||
+                        isLegalMove(board, { x, y }, move.to, true)
+                    ) {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        // 3. 持ち駒の合法手（合駒）を探索（1手でも見つかれば詰みではない）
+        const pseudoDrops = board.getDropsBy(targetColor);
+        for (let i = 0; i < pseudoDrops.length; i++) {
+            const drop = pseudoDrops[i];
+            if (isLegalDrop(board, drop.to, drop.kind, targetColor)) {
+                return false;
+            }
+        }
+
+        // 4. 王手がかかっており、回避できる合法手が0件のため詰み
+        return true;
+    } finally {
+        if (needRestoreTurn) {
+            board.turn = originalTurn;
+        }
+    }
+}
+
 

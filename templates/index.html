@@ -704,9 +704,6 @@
         }
 
         function handleCorrectAnswer(question, buttons, choice) {
-            document.getElementById("result").textContent =
-                "正解！";
-
             correctCount++;
 
             buttons[choice].classList.add("correct");
@@ -716,6 +713,10 @@
                 question.move,
                 ShogiJS
             );
+
+            const isMate = shogiQuestion.isCheckmate(currentShogiBoard);
+            document.getElementById("result").textContent =
+                isMate ? "正解！（詰み）" : "正解！";
 
             showBoardFromShogi();
             showHandsFromShogi();
@@ -747,8 +748,9 @@
             pendingBoardMove = null;
 
             if (isCorrect) {
+                const isMate = shogiQuestion.isCheckmate(currentShogiBoard);
                 document.getElementById("result").textContent =
-                    "正解！";
+                    isMate ? "正解！（詰み）" : "正解！";
 
                 correctCount++;
             } else {

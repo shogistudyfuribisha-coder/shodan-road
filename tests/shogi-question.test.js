@@ -602,6 +602,91 @@ describe("王手中の合法手・王手回避 (canEvadeCheck & isLegalMove)", (
         ).toBe(true);
     });
 });
+
+describe("詰み判定 (isCheckmate)", () => {
+    function createEmptyBoard() {
+        const board = new Shogi();
+        board.editMode(true);
+        for (let y = 1; y <= 9; y++) {
+            for (let x = 1; x <= 9; x++) {
+                board.set(x, y, null);
+            }
+        }
+        return board;
+    }
+
+    test("1. 王手されているが逃げ道がある局面は詰みではない", () => {
+        const board = createEmptyBoard();
+        // 5一後手玉に対し、4二から金が王手（5一玉は6一や6二に逃げられる）
+        board.set(5, 1, new Piece("-OU"));
+        board.set(4, 2, new Piece("+KI"));
+        board.set(4, 3, new Piece("+FU")); // 金のヒモ
+        board.setTurn(Color.White);
+        board.editMode(false);
+
+        expect(shogiQuestion.isCheckmate(board, Color.White)).toBe(false);
+    });
+
+    test("2. 王手駒を取れる局面は詰みではない", () => {
+        const board = createEmptyBoard();
+        // 5一後手玉に対し、5二にヒモのない金が王手（玉で金を取れる）
+        board.set(5, 1, new Piece("-OU"));
+        board.set(5, 2, new Piece("+KI"));
+        board.setTurn(Color.White);
+        board.editMode(false);
+
+        expect(shogiQuestion.isCheckmate(board, Color.White)).toBe(false);
+    });
+
+    test("3. 合駒できる局面は詰みではない", () => {
+        const board = createEmptyBoard();
+        // 5一後手玉に対し、5九から飛車が王手。後手に持ち駒「歩」がある（合駒可能）
+        board.set(5, 1, new Piece("-OU"));
+        board.set(5, 9, new Piece("+HI"));
+        board.pushToHand(new Piece("-FU"));
+        board.setTurn(Color.White);
+        board.editMode(false);
+
+        expect(shogiQuestion.isCheckmate(board, Color.White)).toBe(false);
+    });
+
+    test("4. 王手されていて合法手がない局面は詰みと判定される", () => {
+        const board = createEmptyBoard();
+        // 頭金の詰み: 後手玉 5一、先手金 5二、先手歩 5三（金のヒモ）
+        // 5一玉は金を取れず（5三歩のヒモ）、周囲のマス（4一, 6一, 4二, 5二, 6二）もすべて金の利き
+        board.set(5, 1, new Piece("-OU"));
+        board.set(5, 2, new Piece("+KI"));
+        board.set(5, 3, new Piece("+FU"));
+        board.setTurn(Color.White);
+        board.editMode(false);
+
+        expect(shogiQuestion.isCheckmate(board, Color.White)).toBe(true);
+    });
+
+    test("5. 王手されていない平穏な局面は詰みではない", () => {
+        const board = createEmptyBoard();
+        board.set(5, 1, new Piece("-OU"));
+        board.set(5, 9, new Piece("+OU"));
+        board.setTurn(Color.White);
+        board.editMode(false);
+
+        expect(shogiQuestion.isCheckmate(board, Color.White)).toBe(false);
+    });
+
+    test("手番と異なる側の玉の詰み判定も、手番を乱さずに正しく判定できる", () => {
+        const board = createEmptyBoard();
+        board.set(5, 1, new Piece("-OU"));
+        board.set(5, 2, new Piece("+KI"));
+        board.set(5, 3, new Piece("+FU"));
+        board.setTurn(Color.Black); // 先手手番のまま
+        board.editMode(false);
+
+        // 先手手番のまま後手玉（Color.White）の詰みを判定
+        expect(shogiQuestion.isCheckmate(board, Color.White)).toBe(true);
+        // 判定後も先手手番が維持されていること
+        expect(board.turn).toBe(Color.Black);
+    });
+});
 });
 
 
