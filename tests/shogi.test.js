@@ -150,4 +150,82 @@ describe("shogi.js", () => {
             }
         });
     });
+
+    test("成りを指定した着手が正しく実行される", () => {
+        const board = new Shogi();
+
+        board.editMode(true);
+
+        // 7四に先手の歩を配置
+        board.set(
+            7,
+            4,
+            new Piece("+FU")
+        );
+
+        board.setTurn(Color.Black);
+
+        board.editMode(false);
+
+        const move = {
+            from: [7, 4],
+            to: [7, 3],
+            promote: true
+        };
+
+        shogiBoard.executeCorrectMove(
+            board,
+            move,
+            { Shogi, Color, Piece }
+        );
+
+        const piece = board.get(7, 3);
+
+        expect(piece).not.toBeNull();
+        expect(piece.kind).toBe("TO");
+        expect(piece.color).toBe(Color.Black);
+
+        expect(
+            board.get(7, 4)
+        ).toBeNull();
+    });
+
+    test("不成を指定した着手では駒が成らない", () => {
+        const board = new Shogi();
+
+        board.editMode(true);
+
+        // 7四に先手の歩を配置
+        board.set(
+            7,
+            4,
+            new Piece("+FU")
+        );
+
+        board.setTurn(Color.Black);
+
+        board.editMode(false);
+
+        const move = {
+            from: [7, 4],
+            to: [7, 3],
+            promote: false
+        };
+
+        shogiBoard.executeCorrectMove(
+            board,
+            move,
+            { Shogi, Color, Piece }
+        );
+
+        const piece = board.get(7, 3);
+
+        expect(piece).not.toBeNull();
+        expect(piece.kind).toBe("FU");
+        expect(piece.color).toBe(Color.Black);
+
+        expect(
+            board.get(7, 4)
+        ).toBeNull();
+    });
 });
