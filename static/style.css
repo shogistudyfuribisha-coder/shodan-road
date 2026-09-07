@@ -387,3 +387,29 @@ button.correct-hand {
     opacity: 0.5;
     cursor: default;
 }
+#learning-status-screen {
+    max-width: 700px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+#learning-summary {
+    margin: 20px 0;
+}
+
+#weak-questions {
+    margin: 20px 0;
+}
+
+.weak-question {
+    margin: 12px 0;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    text-align: left;
+    background-color: #fafafa;
+}
+
+.weak-question p {
+    margin: 5px 0;
+}

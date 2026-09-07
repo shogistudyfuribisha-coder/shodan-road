@@ -32,9 +32,19 @@
             <button onclick="startCategory('詰めろ・寄せ')">詰めろ・寄せ</button>
             <button onclick="startCategory('テスト')">テスト</button>
             <button onclick="startReview()">間違えた問題を復習</button>
+            <button onclick="showLearningStatus()">学習状況</button>
         </div>
     </div>
+    <div id="learning-status-screen" style="display: none;">
+        <h2>学習状況</h2>
 
+        <div id="learning-summary"></div>
+
+        <h3>苦手な問題</h3>
+        <div id="weak-questions"></div>
+
+        <button onclick="backToCategoryScreen()">カテゴリ選択に戻る</button>
+    </div>
     <div id="game-screen" style="display: none;">
 
         <h2 id="question-number"></h2>
@@ -172,6 +182,112 @@
             showQuestion();
         }
 
+        function showLearningStatus() {
+            const history =
+                JSON.parse(
+                    localStorage.getItem("shodanRoadQuestionHistory") || "{}"
+                );
+
+            const historyEntries = Object.entries(history);
+
+            if (historyEntries.length === 0) {
+                document.getElementById("learning-summary").innerHTML =
+                    "<p>まだ学習履歴がありません。</p>";
+
+                document.getElementById("weak-questions").innerHTML = "";
+
+                document.getElementById("category-screen").style.display = "none";
+                document.getElementById("learning-status-screen").style.display = "block";
+
+                return;
+            }
+
+            let totalCorrect = 0;
+            let totalIncorrect = 0;
+
+            const questionStats = [];
+
+            historyEntries.forEach(([id, result]) => {
+                const total = result.correct + result.incorrect;
+
+                if (total === 0) return;
+
+                totalCorrect += result.correct;
+                totalIncorrect += result.incorrect;
+
+                const rate = Math.round(result.correct / total * 100);
+
+                const question = allQuestions.find(
+                    question => String(question.id) === id
+                );
+
+                questionStats.push({
+                    id,
+                    question,
+                    correct: result.correct,
+                    incorrect: result.incorrect,
+                    total,
+                    rate
+                });
+            });
+
+            const totalAnswers = totalCorrect + totalIncorrect;
+            const overallRate =
+                totalAnswers > 0
+                    ? Math.round(totalCorrect / totalAnswers * 100)
+                    : 0;
+
+            const studiedCount = questionStats.length;
+
+            document.getElementById("learning-summary").innerHTML = `
+                <p>学習済み：${studiedCount}問 / ${allQuestions.length}問</p>
+                <p>総回答数：${totalAnswers}回</p>
+                <p>正解数：${totalCorrect}回</p>
+                <p>正答率：${overallRate}%</p>
+            `;
+
+            // 正答率が低い順に並べる
+            questionStats.sort((a, b) => a.rate - b.rate);
+
+            const weakQuestions = questionStats.filter(
+                stat => stat.rate < 70
+            );
+
+            if (weakQuestions.length === 0) {
+                document.getElementById("weak-questions").innerHTML =
+                    "<p>現在、特に苦手な問題はありません！</p>";
+            } else {
+                document.getElementById("weak-questions").innerHTML =
+                    weakQuestions.map(stat => {
+                        const questionText =
+                            stat.question
+                                ? stat.question.question
+                                : `問題ID：${stat.id}`;
+
+                        return `
+                            <div class="weak-question">
+                                <p>
+                                    <strong>問題${stat.id}</strong>
+                                    正答率：${stat.rate}%
+                                </p>
+                                <p>${questionText}</p>
+                                <p>
+                                    正解：${stat.correct}回 /
+                                    不正解：${stat.incorrect}回
+                                </p>
+                            </div>
+                        `;
+                    }).join("");
+            }
+
+            document.getElementById("category-screen").style.display = "none";
+            document.getElementById("learning-status-screen").style.display = "block";
+        }
+
+        function backToCategoryScreen() {
+            document.getElementById("learning-status-screen").style.display = "none";
+            document.getElementById("category-screen").style.display = "block";
+        }
         const params = new URLSearchParams(window.location.search);
         const category = params.get("category");
 
