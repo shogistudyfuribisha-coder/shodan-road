@@ -104,6 +104,7 @@
         let currentShogiBoard = null;
         let selectedSquare = null;
         let pendingBoardMove = null;
+        let selectedHandPiece = null;
         function startCategory(category) {
             if (category === "すべて") {
                 questions = [...allQuestions];
@@ -140,6 +141,7 @@
 
             selectedSquare = null;
             pendingBoardMove = null;
+            selectedHandPiece = null;
 
             document.getElementById("question-number").textContent =
                 `第${currentQuestion + 1}問 / 全${questions.length}問`;
@@ -177,18 +179,87 @@
             });
         }
         function showHandsFromShogi() {
+            const senteHand =
+                currentShogiBoard.hands[ShogiJS.Color.Black];
 
-            const senteHand = currentShogiBoard.hands[ShogiJS.Color.Black]
-                .map(piece => shogiBoard.PIECE_NAME_MAP[piece.kind]);
+            const goteHand =
+                currentShogiBoard.hands[ShogiJS.Color.White];
 
-            const goteHand = currentShogiBoard.hands[ShogiJS.Color.White]
-                .map(piece => shogiBoard.PIECE_NAME_MAP[piece.kind]);
+            const senteHandElement =
+                document.getElementById("sente-hand");
 
-            document.getElementById("sente-hand").textContent =
-                `先手の持ち駒：${senteHand.join("、") || "なし"}`;
+            const goteHandElement =
+                document.getElementById("gote-hand");
 
-            document.getElementById("gote-hand").textContent =
-                `後手の持ち駒：${goteHand.join("、") || "なし"}`;
+            senteHandElement.innerHTML = "";
+            goteHandElement.innerHTML = "";
+
+            const senteLabel =
+                document.createElement("span");
+
+            senteLabel.textContent = "先手の持ち駒：";
+
+            senteHandElement.appendChild(senteLabel);
+
+            renderHandPieces(
+                senteHand,
+                ShogiJS.Color.Black,
+                senteHandElement
+            );
+
+            const goteLabel =
+                document.createElement("span");
+
+            goteLabel.textContent = "後手の持ち駒：";
+
+            goteHandElement.appendChild(goteLabel);
+
+            renderHandPieces(
+                goteHand,
+                ShogiJS.Color.White,
+                goteHandElement
+            );
+        }
+
+        function renderHandPieces(hand, color, container) {
+            if (hand.length === 0) {
+                const empty =
+                    document.createElement("span");
+
+                empty.textContent = "なし";
+
+                container.appendChild(empty);
+
+                return;
+            }
+
+            const pieceCounts = {};
+
+            hand.forEach(piece => {
+                pieceCounts[piece.kind] =
+                    (pieceCounts[piece.kind] || 0) + 1;
+            });
+
+            Object.entries(pieceCounts).forEach(
+                ([kind, count]) => {
+                    const button =
+                        document.createElement("button");
+
+                    const pieceName =
+                        shogiBoard.PIECE_NAME_MAP[kind];
+
+                    button.textContent =
+                        count > 1
+                            ? `${pieceName}×${count}`
+                            : pieceName;
+
+                    button.onclick = function() {
+                        selectHandPiece(kind, color);
+                    };
+
+                    container.appendChild(button);
+                }
+            );
         }
 
         function showBoardFromShogi() {
@@ -254,9 +325,101 @@
             }
         }
 
+        function selectHandPiece(kind, color) {
+            // 問題回答済みなら何もしない
+            if (
+                document.getElementById("next-button").style.display === "block"
+            ) {
+                return;
+            }
+
+            // 自分の手番ではない持ち駒は選択できない
+            if (currentShogiBoard.turn !== color) {
+                return;
+            }
+
+            // 盤上の駒を選択していたら解除
+            selectedSquare = null;
+
+            selectedHandPiece = {
+                kind,
+                color
+            };
+
+            console.log(
+                "持ち駒を選択:",
+                selectedHandPiece
+            );
+
+            showHandsFromShogi();
+            showBoardFromShogi();
+        }
+        function executeBoardDrop(handPiece, to) {
+            try {
+                currentShogiBoard.drop(
+                    to.x,
+                    to.y,
+                    handPiece.kind,
+                    handPiece.color
+                );
+
+                const userMove = {
+                    from_hand: true,
+                    piece:
+                        handPiece.color === ShogiJS.Color.Black
+                            ? `S${shogiBoard.PIECE_NAME_MAP[handPiece.kind]}`
+                            : `G${shogiBoard.PIECE_NAME_MAP[handPiece.kind]}`,
+                    to
+                };
+
+                console.log(
+                    "ユーザーの着手:",
+                    userMove
+                );
+
+                const isCorrect =
+                    isCorrectMove(
+                        userMove,
+                        questions[currentQuestion].move
+                    );
+
+                console.log("正解:", isCorrect);
+
+                selectedHandPiece = null;
+
+                handleBoardAnswer(
+                    questions[currentQuestion],
+                    isCorrect
+                );
+
+                showBoardFromShogi();
+                showHandsFromShogi();
+
+            } catch (error) {
+                console.log(
+                    "駒を打てません:",
+                    error
+                );
+            }
+        }
         function selectSquare(x, y) {
             // 成り選択待ちの場合は盤面を操作しない
             if (pendingBoardMove !== null) {
+                return;
+            }
+
+            // 持ち駒を選択している場合
+            if (selectedHandPiece !== null) {
+                const to = {
+                    x,
+                    y
+                };
+
+                executeBoardDrop(
+                    selectedHandPiece,
+                    to
+                );
+
                 return;
             }
 
@@ -290,7 +453,6 @@
                 y
             };
 
-            // 成れる場合は、ここではまだ着手しない
             if (
                 canPromote(
                     from.x,
@@ -411,6 +573,18 @@
 
         function isCorrectMove(userMove, correctMove) {
             if (correctMove.from_hand) {
+                if (!userMove.from_hand) {
+                    return false;
+                }
+
+                return (
+                    userMove.piece === correctMove.piece &&
+                    userMove.to.x === correctMove.to[0] &&
+                    userMove.to.y === correctMove.to[1]
+                );
+            }
+
+            if (userMove.from_hand) {
                 return false;
             }
 

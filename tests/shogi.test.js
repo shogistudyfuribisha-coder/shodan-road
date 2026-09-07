@@ -228,4 +228,134 @@ describe("shogi.js", () => {
             board.get(7, 4)
         ).toBeNull();
     });
+
+    test("持ち駒から駒を打てる", () => {
+        const board = new Shogi();
+
+        board.editMode(true);
+
+        board.pushToHand(
+            new Piece("+KI")
+        );
+
+        board.setTurn(Color.Black);
+
+        board.editMode(false);
+
+        expect(
+            board.get(5, 2)
+        ).toBeNull();
+
+        board.drop(
+            5,
+            2,
+            "KI",
+            Color.Black
+        );
+
+        const piece = board.get(5, 2);
+
+        expect(piece).not.toBeNull();
+        expect(piece.kind).toBe("KI");
+        expect(piece.color).toBe(Color.Black);
+    });
+
+    test("持ち駒から駒を打つと持ち駒が1枚減る", () => {
+        const board = new Shogi();
+
+        board.editMode(true);
+
+        board.pushToHand(
+            new Piece("+KI")
+        );
+
+        board.pushToHand(
+            new Piece("+KI")
+        );
+
+        board.setTurn(Color.Black);
+
+        board.editMode(false);
+
+        expect(
+            board.hands[Color.Black]
+        ).toHaveLength(2);
+
+        board.drop(
+            5,
+            2,
+            "KI",
+            Color.Black
+        );
+
+        expect(
+            board.hands[Color.Black]
+        ).toHaveLength(1);
+
+        expect(
+            board.get(5, 2).kind
+        ).toBe("KI");
+    });
+
+    test("持ち駒を打った後の盤面と持ち駒が正しい", () => {
+        const board = new Shogi();
+
+        board.editMode(true);
+
+        board.pushToHand(
+            new Piece("+KI")
+        );
+
+        board.setTurn(Color.Black);
+
+        board.editMode(false);
+
+        board.drop(
+            5,
+            5,
+            "KI",
+            Color.Black
+        );
+
+        const piece = board.get(5, 5);
+
+        expect(piece).not.toBeNull();
+        expect(piece.kind).toBe("KI");
+        expect(piece.color).toBe(Color.Black);
+
+        expect(
+            board.hands[Color.Black]
+        ).toHaveLength(0);
+    });
+
+    test("不正な持ち駒の打ち方はエラーになる", () => {
+        const board = new Shogi();
+
+        board.editMode(true);
+
+        // 5五に先手の歩を配置
+        board.set(
+            5,
+            5,
+            new Piece("+FU")
+        );
+
+        board.pushToHand(
+            new Piece("+FU")
+        );
+
+        board.setTurn(Color.Black);
+
+        board.editMode(false);
+
+        expect(() => {
+            // すでに駒がある5五には打てない
+            board.drop(
+                5,
+                5,
+                "FU",
+                Color.Black
+            );
+        }).toThrow();
+    });
 });
