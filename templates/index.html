@@ -111,6 +111,7 @@
         let questions = [];
         let currentQuestion = 0;
         let correctCount = 0;
+        let questionResults = [];
         let currentShogiBoard = null;
         let selectedSquare = null;
         let pendingBoardMove = null;
@@ -851,6 +852,11 @@
         function handleCorrectAnswer(question, buttons, choice) {
             correctCount++;
 
+            questionResults.push({
+                id: question.id,
+                correct: true
+            });
+
             buttons[choice].classList.add("correct");
 
             shogiBoard.executeCorrectMove(
@@ -870,6 +876,11 @@
             document.getElementById("result").textContent = "不正解！";
             buttons[choice].classList.add("incorrect");
             buttons[question.answer].classList.add("correct");
+
+            questionResults.push({
+                id: question.id,
+                correct: false
+            });
 
             correctMoveHint = question.move;
 
@@ -915,8 +926,18 @@
                     isMate ? "正解！（詰み）" : "正解！";
 
                 correctCount++;
+
+                questionResults.push({
+                    id: question.id,
+                    correct: true
+                });
             } else {
                 document.getElementById("result").textContent = "不正解！";
+
+                questionResults.push({
+                    id: question.id,
+                    correct: false
+                });
 
                 // 問題開始時の盤面に戻す
                 currentShogiBoard = shogiBoard.createShogiBoard(
@@ -957,6 +978,36 @@
 
             localStorage.setItem(
                 "shodanRoadHistory",
+                JSON.stringify(history)
+            );
+
+            return history;
+        }
+        function saveQuestionHistory() {
+            const history =
+                JSON.parse(
+                    localStorage.getItem("shodanRoadQuestionHistory") || "{}"
+                );
+
+            questionResults.forEach(result => {
+                const id = String(result.id);
+
+                if (!history[id]) {
+                    history[id] = {
+                        correct: 0,
+                        incorrect: 0
+                    };
+                }
+
+                if (result.correct) {
+                    history[id].correct++;
+                } else {
+                    history[id].incorrect++;
+                }
+            });
+
+            localStorage.setItem(
+                "shodanRoadQuestionHistory",
                 JSON.stringify(history)
             );
 
@@ -1010,6 +1061,7 @@
             document.getElementById("restart-button").style.display =
                 "block";
             const history = saveHistory(rate);
+            saveQuestionHistory();
 
             showBestRecord(history);
 
