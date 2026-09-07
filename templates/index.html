@@ -229,6 +229,29 @@
             showQuestion();
         }
 
+        function startSingleQuestion(questionId) {
+            const question = allQuestions.find(
+                question => String(question.id) === String(questionId)
+            );
+
+            if (!question) {
+                alert("問題が見つかりません。");
+                return;
+            }
+
+            questions = [question];
+
+            currentQuestion = 0;
+            correctCount = 0;
+            questionResults = [];
+
+            document.getElementById("category-screen").style.display = "none";
+            document.getElementById("learning-status-screen").style.display = "none";
+            document.getElementById("game-screen").style.display = "block";
+
+            showQuestion();
+        }
+
         function showLearningStatus() {
             const history =
                 JSON.parse(
@@ -322,6 +345,9 @@
                                     正解：${stat.correct}回 /
                                     不正解：${stat.incorrect}回
                                 </p>
+                                <button onclick="startSingleQuestion(${stat.id})">
+                                    この問題を見る
+                                </button>
                             </div>
                         `;
                     }).join("");
