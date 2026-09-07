@@ -291,3 +291,8 @@ h2 {
 .square.selected {
     outline: 3px solid red;
 }
+
+.selected-hand {
+    outline: 3px solid red;
+    outline-offset: 2px;
+}

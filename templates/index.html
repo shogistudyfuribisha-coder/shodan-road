@@ -253,6 +253,14 @@
                             ? `${pieceName}×${count}`
                             : pieceName;
 
+                    if (
+                        selectedHandPiece !== null &&
+                        selectedHandPiece.kind === kind &&
+                        selectedHandPiece.color === color
+                    ) {
+                        button.classList.add("selected-hand");
+                    }
+
                     button.onclick = function() {
                         selectHandPiece(kind, color);
                     };
