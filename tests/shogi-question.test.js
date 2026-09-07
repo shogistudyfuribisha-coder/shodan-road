@@ -434,5 +434,174 @@ describe("isSuicideMove & isSuicideDrop (自殺手・王手放置の禁止)", ()
         expect(board.turn).toBe(Color.Black);
     });
 });
+
+describe("王手中の合法手・王手回避 (canEvadeCheck & isLegalMove)", () => {
+    function createEmptyBoard() {
+        const board = new Shogi();
+        board.editMode(true);
+        for (let y = 1; y <= 9; y++) {
+            for (let x = 1; x <= 9; x++) {
+                board.set(x, y, null);
+            }
+        }
+        return board;
+    }
+
+    test("isInCheck: 王手されている局面とされていない局面を正しく判定できる", () => {
+        const board = createEmptyBoard();
+        board.set(5, 9, new Piece("+OU"));
+        board.set(5, 1, new Piece("-HI")); // 王手
+        board.setTurn(Color.Black);
+        board.editMode(false);
+
+        expect(shogiQuestion.isInCheck(board, Color.Black)).toBe(true);
+        expect(shogiQuestion.isInCheck(board)).toBe(true);
+
+        // 王手を防ぐ合駒を置く
+        board.editMode(true);
+        board.set(5, 5, new Piece("+KI"));
+        board.editMode(false);
+
+        expect(shogiQuestion.isInCheck(board, Color.Black)).toBe(false);
+    });
+
+    test("王手回避 1: 玉を安全なマスへ逃がす手は合法手として許可される", () => {
+        const board = createEmptyBoard();
+        board.set(5, 9, new Piece("+OU"));
+        board.set(5, 1, new Piece("-HI")); // 5筋からの王手
+        board.setTurn(Color.Black);
+        board.editMode(false);
+
+        // 5九の玉を4九に逃がす（安全）
+        expect(
+            shogiQuestion.isLegalMove(board, { x: 5, y: 9 }, { x: 4, y: 9 }, false)
+        ).toBe(true);
+        expect(
+            shogiQuestion.canEvadeCheckByMove(board, { x: 5, y: 9 }, { x: 4, y: 9 }, false)
+        ).toBe(true);
+
+        // 5九の玉を6八に逃がす（安全）
+        expect(
+            shogiQuestion.isLegalMove(board, { x: 5, y: 9 }, { x: 6, y: 8 }, false)
+        ).toBe(true);
+    });
+
+    test("王手回避 1: 玉が逃げた先も相手駒の利きがある場合は拒否される", () => {
+        const board = createEmptyBoard();
+        board.set(5, 9, new Piece("+OU"));
+        board.set(5, 1, new Piece("-HI")); // 5筋からの王手
+        board.set(4, 7, new Piece("-FU")); // 4八に歩の利きがある
+        board.setTurn(Color.Black);
+        board.editMode(false);
+
+        // 5九の玉を4八に逃がそうとするが、相手の歩の利きがあるため自殺手
+        expect(
+            shogiQuestion.isLegalMove(board, { x: 5, y: 9 }, { x: 4, y: 8 }, false)
+        ).toBe(false);
+    });
+
+    test("王手回避 2: 王手している相手駒を取る手は合法手として許可される", () => {
+        const board = createEmptyBoard();
+        board.set(5, 9, new Piece("+OU"));
+        board.set(5, 8, new Piece("-KI")); // 5八の金が至近距離で王手
+        board.set(6, 7, new Piece("+GI")); // 6七の銀が5八に利いている
+        board.setTurn(Color.Black);
+        board.editMode(false);
+
+        // 6七の銀で王手駒（5八金）を取る
+        expect(
+            shogiQuestion.isLegalMove(board, { x: 6, y: 7 }, { x: 5, y: 8 }, false)
+        ).toBe(true);
+
+        // 5九の玉で王手駒（5八金）を取る
+        expect(
+            shogiQuestion.isLegalMove(board, { x: 5, y: 9 }, { x: 5, y: 8 }, false)
+        ).toBe(true);
+    });
+
+    test("王手回避 2: 王手している駒を取っても相手のヒモが付いている場合は拒否される", () => {
+        const board = createEmptyBoard();
+        board.set(5, 9, new Piece("+OU"));
+        board.set(5, 8, new Piece("-KI")); // 5八金で王手
+        board.set(5, 1, new Piece("-HI")); // 5八金に5一飛車のヒモが付いている
+        board.setTurn(Color.Black);
+        board.editMode(false);
+
+        // 5九の玉で5八金を取ると、直後に飛車で取られるため自殺手（拒否）
+        expect(
+            shogiQuestion.isLegalMove(board, { x: 5, y: 9 }, { x: 5, y: 8 }, false)
+        ).toBe(false);
+    });
+
+    test("王手回避 3: 盤上の駒を移動させて合駒とする手は合法手として許可される", () => {
+        const board = createEmptyBoard();
+        board.set(5, 9, new Piece("+OU"));
+        board.set(5, 1, new Piece("-HI")); // 5筋の王手
+        board.set(6, 6, new Piece("+GI")); // 6六の銀
+        board.setTurn(Color.Black);
+        board.editMode(false);
+
+        // 6六の銀を5五に移動させて王手の射線を遮断する（移動合）
+        expect(
+            shogiQuestion.isLegalMove(board, { x: 6, y: 6 }, { x: 5, y: 5 }, false)
+        ).toBe(true);
+    });
+
+    test("王手回避 3: 持ち駒を打って合駒とする手は合法手として許可される", () => {
+        const board = createEmptyBoard();
+        board.set(5, 9, new Piece("+OU"));
+        board.set(5, 1, new Piece("-HI")); // 5筋の王手
+        board.pushToHand(new Piece("+FU"));
+        board.setTurn(Color.Black);
+        board.editMode(false);
+
+        // 5八〜5二のどこかに歩を打って王手を遮断する（打ち合駒）
+        expect(
+            shogiQuestion.isLegalDrop(board, { x: 5, y: 7 }, "FU", Color.Black)
+        ).toBe(true);
+        expect(
+            shogiQuestion.canEvadeCheckByDrop(board, { x: 5, y: 7 }, "FU", Color.Black)
+        ).toBe(true);
+    });
+
+    test("王手を解除できない他の駒の着手は拒否される", () => {
+        const board = createEmptyBoard();
+        board.set(5, 9, new Piece("+OU"));
+        board.set(5, 1, new Piece("-HI")); // 5筋の王手
+        board.set(1, 7, new Piece("+FU")); // 無関係な1筋の歩
+        board.pushToHand(new Piece("+FU"));
+        board.setTurn(Color.Black);
+        board.editMode(false);
+
+        // 1七の歩を1六に突く（王手放置）
+        expect(
+            shogiQuestion.isLegalMove(board, { x: 1, y: 7 }, { x: 1, y: 6 }, false)
+        ).toBe(false);
+
+        // 2五に歩を打つ（王手放置）
+        expect(
+            shogiQuestion.isLegalDrop(board, { x: 2, y: 5 }, "FU", Color.Black)
+        ).toBe(false);
+    });
+
+    test("通常の王手されていない局面では、従来どおり合法手を指せる", () => {
+        const board = createEmptyBoard();
+        board.set(5, 9, new Piece("+OU"));
+        board.set(7, 7, new Piece("+FU"));
+        board.setTurn(Color.Black);
+        board.editMode(false);
+
+        // 平穏時の歩突き（7七 -> 7六）
+        expect(
+            shogiQuestion.isLegalMove(board, { x: 7, y: 7 }, { x: 7, y: 6 }, false)
+        ).toBe(true);
+
+        // 平穏時の玉移動（5九 -> 5八）
+        expect(
+            shogiQuestion.isLegalMove(board, { x: 5, y: 9 }, { x: 5, y: 8 }, false)
+        ).toBe(true);
+    });
 });
+});
+
 

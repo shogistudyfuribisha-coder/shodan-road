@@ -30,7 +30,12 @@ const shogiQuestion = {
     canSelectPiece,
     mustPromote,
     isSuicideMove,
-    isSuicideDrop
+    isSuicideDrop,
+    isInCheck,
+    isLegalMove,
+    isLegalDrop,
+    canEvadeCheckByMove,
+    canEvadeCheckByDrop
 };
 
 if (typeof module !== "undefined") {
@@ -160,4 +165,26 @@ function isSuicideDrop(board, to, kind, color) {
     board.undrop(to.x, to.y);
 
     return isCheck;
-}
+}
+
+function isInCheck(board, color) {
+    const targetColor = color !== undefined ? color : board.turn;
+    return board.isCheck(targetColor);
+}
+
+function isLegalMove(board, from, to, promote) {
+    return !isSuicideMove(board, from, to, promote);
+}
+
+function isLegalDrop(board, to, kind, color) {
+    return !isSuicideDrop(board, to, kind, color);
+}
+
+function canEvadeCheckByMove(board, from, to, promote) {
+    return isLegalMove(board, from, to, promote);
+}
+
+function canEvadeCheckByDrop(board, to, kind, color) {
+    return isLegalDrop(board, to, kind, color);
+}
+
