@@ -283,11 +283,6 @@
                 y
             };
 
-            const userMove = {
-                from,
-                to
-            };
-
             try {
                 currentShogiBoard.move(
                     from.x,
@@ -297,28 +292,32 @@
                     false
                 );
 
-                selectedSquare = null;
+                const userMove = {
+                    from,
+                    to
+                };
 
-                if (
+                console.log(
+                    "ユーザーの着手:",
+                    userMove
+                );
+
+                const isCorrect =
                     isCorrectMove(
                         userMove,
                         questions[currentQuestion].move
-                    )
-                ) {
-                    handleCorrectAnswer(
-                        questions[currentQuestion],
-                        document.querySelectorAll(".choice-button"),
-                        null
                     );
-                } else {
-                    handleIncorrectAnswer(
-                        questions[currentQuestion],
-                        document.querySelectorAll(".choice-button")
-                    );
-                }
+
+                console.log("正解:", isCorrect);
+
+                selectedSquare = null;
+
+                handleBoardAnswer(
+                    questions[currentQuestion],
+                    isCorrect
+                );
 
                 showBoardFromShogi();
-
             } catch (error) {
                 console.log("駒を移動できません:", error);
             }
@@ -391,6 +390,22 @@
 
             document.getElementById("next-button").style.display =
                 "block";
+        }
+        function handleBoardAnswer(question, isCorrect) {
+            const buttons =
+                document.querySelectorAll(".choice-button");
+
+            if (isCorrect) {
+                document.getElementById("result").textContent =
+                    "正解！";
+
+                correctCount++;
+            } else {
+                document.getElementById("result").textContent =
+                    "不正解！";
+            }
+
+            finishQuestion(question, buttons);
         }
         function nextQuestion() {
             currentQuestion++;
