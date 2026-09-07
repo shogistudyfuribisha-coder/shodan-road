@@ -359,60 +359,45 @@
         }
 
         function showBoardFromShogi() {
-            const board = [];
+            const boardElement =
+                document.getElementById("board");
+
+            boardElement.innerHTML = "";
 
             for (let row = 0; row < 9; row++) {
-                board[row] = [];
-
                 for (let col = 0; col < 9; col++) {
+
                     const { x, y } =
                         questionBoardToShogi(row, col);
 
                     const piece =
                         currentShogiBoard.get(x, y);
 
-                    if (piece === null) {
-                        board[row][col] = "";
-                        continue;
-                    }
-
-                    const owner =
-                        piece.color === ShogiJS.Color.Black
-                            ? "S"
-                            : "G";
-
-                    const pieceName =
-                        PIECE_NAME_MAP[piece.kind];
-
-                    if (!pieceName) {
-                        throw new Error(
-                            `未対応の駒: ${piece.kind}`
-                        );
-                    }
-
-                    board[row][col] =
-                        owner + pieceName;
-                }
-            }
-
-            showBoard(board);
-        }
-        function showBoard(board) {
-            const boardElement = document.getElementById("board");
-            boardElement.innerHTML = "";
-
-            board.forEach(row => {
-                row.forEach(piece => {
-                    const square = document.createElement("div");
+                    const square =
+                        document.createElement("div");
 
                     square.className = "square";
 
-                    if (piece !== "") {
-                        const owner = piece.charAt(0);
-                        const pieceName = piece.slice(1);
+                    if (piece !== null) {
+                        const owner =
+                            piece.color === ShogiJS.Color.Black
+                                ? "S"
+                                : "G";
 
-                        const pieceElement = document.createElement("span");
-                        pieceElement.textContent = pieceName;
+                        const pieceName =
+                            PIECE_NAME_MAP[piece.kind];
+
+                        if (!pieceName) {
+                            throw new Error(
+                                `未対応の駒: ${piece.kind}`
+                            );
+                        }
+
+                        const pieceElement =
+                            document.createElement("span");
+
+                        pieceElement.textContent =
+                            pieceName;
 
                         if (owner === "G") {
                             pieceElement.classList.add("gote");
@@ -422,8 +407,8 @@
                     }
 
                     boardElement.appendChild(square);
-                });
-            });
+                }
+            }
         }
 
         function executeCorrectMove(move) {
