@@ -80,12 +80,19 @@
 
         <p id="result"></p>
         <p id="explanation"></p>
-        <button id="show-answer-button" style="display: none;" onclick="showCorrectMove()">
-            正解手を見る
-        </button>
-        <button id="next-button" style="display: none;" onclick="nextQuestion()">
-            次の問題
-        </button>
+        <div id="question-action-buttons">
+            <button id="show-answer-button" style="display: none;" onclick="showCorrectMove()">
+                正解手を見る
+            </button>
+
+            <button id="retry-question-button" style="display: none;" onclick="retryCurrentQuestion()">
+                この問題をもう一度解く
+            </button>
+
+            <button id="next-button" style="display: none;" onclick="nextQuestion()">
+                次の問題
+            </button>
+        </div>
         <button id="restart-button" style="display: none;" onclick="restartGame()">
             もう一度挑戦
         </button>
@@ -141,10 +148,9 @@
 
         function showQuestion() {
             const question = questions[currentQuestion];
-            document.getElementById("show-answer-button").style.display =
-                "none";
-            document.getElementById("show-answer-button").disabled =
-                false;
+            document.getElementById("show-answer-button").style.display = "none";
+            document.getElementById("show-answer-button").disabled = false;
+            document.getElementById("retry-question-button").style.display = "none";
             currentShogiBoard =
                 shogiBoard.createShogiBoard(question, ShogiJS);
 
@@ -885,6 +891,9 @@
             ) {
                 document.getElementById("show-answer-button").style.display =
                     "block";
+
+                document.getElementById("retry-question-button").style.display =
+                    "block";
             }
 
             document.getElementById("next-button").style.display =
@@ -1080,6 +1089,10 @@
             } catch (error) {
                 console.error("正解手を再生できません:", error);
             }
+        }
+        function retryCurrentQuestion() {
+            // 現在の問題を最初の状態で再表示
+            showQuestion();
         }
     </script>
 </body>
