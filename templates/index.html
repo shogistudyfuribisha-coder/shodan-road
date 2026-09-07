@@ -467,7 +467,15 @@
                 showBoardFromShogi();
                 return;
             }
+            if (
+                piece &&
+                piece.color === currentShogiBoard.turn
+            ) {
+                selectedSquare = { x, y };
 
+                showBoardFromShogi();
+                return;
+            }
             if (selectedSquare.x === x && selectedSquare.y === y) {
                 selectedSquare = null;
 
