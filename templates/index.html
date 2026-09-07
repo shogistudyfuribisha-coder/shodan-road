@@ -31,6 +31,7 @@
             <button onclick="startCategory('手筋')">手筋</button>
             <button onclick="startCategory('詰めろ・寄せ')">詰めろ・寄せ</button>
             <button onclick="startCategory('テスト')">テスト</button>
+            <button onclick="startReview()">間違えた問題を復習</button>
         </div>
     </div>
 
@@ -129,6 +130,37 @@
             }
 
             // 問題をランダムな順番に並べる
+            questions.sort(() => Math.random() - 0.5);
+
+            currentQuestion = 0;
+            correctCount = 0;
+            questionResults = [];
+
+            document.getElementById("category-screen").style.display = "none";
+            document.getElementById("game-screen").style.display = "block";
+
+            showQuestion();
+        }
+
+        function startReview() {
+            const history =
+                JSON.parse(
+                    localStorage.getItem("shodanRoadQuestionHistory") || "{}"
+                );
+
+            const reviewQuestions = allQuestions.filter(question => {
+                const result = history[String(question.id)];
+                return result && result.incorrect > 0;
+            });
+
+            if (reviewQuestions.length === 0) {
+                alert("復習する問題はありません。");
+                return;
+            }
+
+            questions = [...reviewQuestions];
+
+            // 復習する問題もランダムな順番にする
             questions.sort(() => Math.random() - 0.5);
 
             currentQuestion = 0;
