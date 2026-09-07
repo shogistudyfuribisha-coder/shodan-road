@@ -492,4 +492,32 @@ describe("shogi.js", () => {
             shogiQuestion.isCorrectMove(userMove, correctMove)
         ).toBe(false);
     });
+
+        test("盤上の駒を動かすと手番が切り替わる", () => {
+        const board = new Shogi();
+
+        board.editMode(true);
+
+        board.set(
+            5,
+            5,
+            new Piece("+FU")
+        );
+
+        board.setTurn(Color.Black);
+
+        board.editMode(false);
+
+        expect(board.turn).toBe(Color.Black);
+
+        board.move(
+            5,
+            5,
+            5,
+            4,
+            false
+        );
+
+        expect(board.turn).toBe(Color.White);
+    });
 });
