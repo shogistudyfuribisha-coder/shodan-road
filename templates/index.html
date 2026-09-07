@@ -471,29 +471,33 @@
                 document.querySelectorAll("#choices button");
 
             if (choice === question.answer) {
-                document.getElementById("result").textContent =
-                    "正解！";
-
-                correctCount++;
-
-                buttons[choice].classList.add("correct");
-
-                // 正解手を実行
-                executeCorrectMove(question.move);
-
-                // shogi.js の状態を画面に反映
-                showBoardFromShogi();
-                showHandsFromShogi();
-
+                handleCorrectAnswer(question, buttons, choice);
             } else {
-                document.getElementById("result").textContent =
-                    "不正解！";
-
-                buttons[choice].classList.add("incorrect");
-                buttons[question.answer].classList.add("correct");
+                handleIncorrectAnswer(question, buttons, choice);
             }
 
             finishQuestion(question, buttons);
+        }
+
+        function handleCorrectAnswer(question, buttons, choice) {
+            document.getElementById("result").textContent =
+                "正解！";
+
+            correctCount++;
+
+            buttons[choice].classList.add("correct");
+
+            executeCorrectMove(question.move);
+
+            showBoardFromShogi();
+            showHandsFromShogi();
+        }
+        function handleIncorrectAnswer(question, buttons, choice) {
+            document.getElementById("result").textContent =
+                "不正解！";
+
+            buttons[choice].classList.add("incorrect");
+            buttons[question.answer].classList.add("correct");
         }
         function finishQuestion(question, buttons) {
             document.getElementById("explanation").textContent =
@@ -512,55 +516,82 @@
             if (currentQuestion < questions.length) {
                 showQuestion();
             } else {
-                document.getElementById("question-number").textContent =
-                    "結果";
-
-                document.getElementById("question").textContent =
-                    `${questions.length}問中${correctCount}問正解！`;
-
-                document.getElementById("choices").innerHTML = "";
-
-                document.getElementById("result").textContent =
-                    `正答率：${Math.round(correctCount / questions.length * 100)}%`;
-
-                document.getElementById("explanation").textContent = "";
-
-                document.getElementById("next-button").style.display = "none";
-                // プレイ結果を履歴に保存
-                const history = JSON.parse(localStorage.getItem("shodanRoadHistory") || "[]");
-
-                history.push({
-                    date: new Date().toLocaleString("ja-JP"),
-                    correct: correctCount,
-                    total: questions.length,
-                    rate: Math.round(correctCount / questions.length * 100)
-                });
-
-                localStorage.setItem("shodanRoadHistory", JSON.stringify(history));
-                // 最高記録を表示
-                const bestRecord = history.reduce((best, record) => {
-                    return record.rate > best.rate ? record : best;
-                });
-
-                document.getElementById("best-record").textContent =
-                    `${bestRecord.correct} / ${bestRecord.total}問　${bestRecord.rate}%`;
-
-                // 履歴を表示
-                const historyList = document.getElementById("history-list");
-                historyList.innerHTML = "";
-
-                history.slice().reverse().forEach(record => {
-                    const p = document.createElement("p");
-                    p.textContent =
-                        `${record.date}　${record.correct} / ${record.total}問　${record.rate}%`;
-                    historyList.appendChild(p);
-                });
-
-                document.getElementById("history").style.display = "block";
-                document.getElementById("restart-button").style.display = "block";
+                showResult();
             }
         }
+        function saveHistory(rate) {
+            const history =
+                JSON.parse(
+                    localStorage.getItem("shodanRoadHistory") || "[]"
+                );
 
+            history.push({
+                date: new Date().toLocaleString("ja-JP"),
+                correct: correctCount,
+                total: questions.length,
+                rate: rate
+            });
+
+            localStorage.setItem(
+                "shodanRoadHistory",
+                JSON.stringify(history)
+            );
+
+            return history;
+        }
+        function showBestRecord(history) {
+            const bestRecord = history.reduce((best, record) => {
+                return record.rate > best.rate ? record : best;
+            });
+
+            document.getElementById("best-record").textContent =
+                `${bestRecord.correct} / ${bestRecord.total}問　${bestRecord.rate}%`;
+        }
+        function showHistory(history) {
+            const historyList =
+                document.getElementById("history-list");
+
+            historyList.innerHTML = "";
+
+            history.slice().reverse().forEach(record => {
+                const p = document.createElement("p");
+
+                p.textContent =
+                    `${record.date}　${record.correct} / ${record.total}問　${record.rate}%`;
+
+                historyList.appendChild(p);
+            });
+
+            document.getElementById("history").style.display =
+                "block";
+        }
+        function showResult() {
+            document.getElementById("question-number").textContent =
+                "結果";
+
+            document.getElementById("question").textContent =
+                `${questions.length}問中${correctCount}問正解！`;
+
+            document.getElementById("choices").innerHTML = "";
+
+            const rate =
+                Math.round(correctCount / questions.length * 100);
+
+            document.getElementById("result").textContent =
+                `正答率：${rate}%`;
+
+            document.getElementById("explanation").textContent = "";
+
+            document.getElementById("next-button").style.display =
+                "none";
+
+            const history = saveHistory(rate);
+
+            showBestRecord(history);
+
+            // 履歴を表示
+            showHistory(history);
+        }
         function restartGame() {
             currentQuestion = 0;
             correctCount = 0;
