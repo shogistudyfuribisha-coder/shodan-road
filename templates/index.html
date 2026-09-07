@@ -322,6 +322,10 @@
                         pieceElement.textContent =
                             pieceName;
 
+                        if (pieceName.length >= 2) {
+                            pieceElement.classList.add("long-piece");
+                        }
+
                         if (owner === "G") {
                             pieceElement.classList.add("gote");
                         }
@@ -493,7 +497,17 @@
                 y
             };
 
-            if (
+            const mustPromote =
+                shogiQuestion.mustPromote(
+                    from.x,
+                    from.y,
+                    to.x,
+                    to.y,
+                    ShogiJS,
+                    currentShogiBoard
+                );
+
+            const canPromote =
                 shogiQuestion.canPromote(
                     from.x,
                     from.y,
@@ -501,8 +515,9 @@
                     to.y,
                     ShogiJS,
                     currentShogiBoard
-                )
-            ) {
+                );
+
+            if (mustPromote || canPromote) {
                 pendingBoardMove = {
                     from,
                     to
@@ -510,7 +525,7 @@
 
                 selectedSquare = null;
 
-                showPromotionChoice();
+                showPromotionChoice(mustPromote);
 
                 return;
             }
@@ -574,7 +589,7 @@
             }
         }
 
-        function showPromotionChoice() {
+        function showPromotionChoice(mustPromote) {
             const choicesElement =
                 document.getElementById("choices");
 
@@ -597,6 +612,12 @@
                 );
             };
 
+            choicesElement.appendChild(promoteButton);
+
+            if (mustPromote) {
+                return;
+            }
+
             const noPromoteButton =
                 document.createElement("button");
 
@@ -614,10 +635,8 @@
                 );
             };
 
-            choicesElement.appendChild(promoteButton);
             choicesElement.appendChild(noPromoteButton);
         }
-
         
         function checkAnswer(choice) {
             const question = questions[currentQuestion];

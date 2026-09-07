@@ -100,6 +100,19 @@ describe("shogi.js", () => {
 
         expectedKind = movingPiece.kind;
         expectedColor = movingPiece.color;
+
+        if (move.promote) {
+        const promotedKindMap = {
+            FU: "TO",
+            KY: "NY",
+            KE: "NK",
+            GI: "NG",
+            KA: "UM",
+            HI: "RY",
+        };
+
+        expectedKind = promotedKindMap[expectedKind];
+        }
       }
 
       shogiBoard.executeCorrectMove(board, move, { Shogi, Color, Piece });

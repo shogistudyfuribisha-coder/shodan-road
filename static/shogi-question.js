@@ -27,7 +27,8 @@ function isCorrectMove(userMove, correctMove) {
 const shogiQuestion = {
     isCorrectMove,
     canPromote,
-    canSelectPiece
+    canSelectPiece,
+    mustPromote
 };
 
 if (typeof module !== "undefined") {
@@ -95,4 +96,26 @@ function canPromote(
             : fromY >= 7;
 
     return enemyZone || fromEnemyZone;
+}
+
+function mustPromote(fromX, fromY, toX, toY, ShogiAPI, board) {
+    const piece = board.get(fromX, fromY);
+
+    if (!piece) {
+        return false;
+    }
+
+    if (piece.kind === "FU" || piece.kind === "KY") {
+        return piece.color === ShogiAPI.Color.Black
+            ? toY === 1
+            : toY === 9;
+    }
+
+    if (piece.kind === "KE") {
+        return piece.color === ShogiAPI.Color.Black
+            ? toY <= 2
+            : toY >= 8;
+    }
+
+    return false;
 }

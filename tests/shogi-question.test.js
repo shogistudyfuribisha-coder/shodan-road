@@ -190,4 +190,107 @@ describe("canPromote", () => {
       );
     });
   });
+  describe("mustPromote", () => {
+
+    test("先手の歩が1段目に入る場合、必ず成る", () => {
+        const board = new Shogi();
+
+        board.editMode(true);
+
+        board.set(
+            5,
+            2,
+            new Piece("+FU")
+        );
+
+        board.editMode(false);
+
+        expect(
+            shogiQuestion.mustPromote(
+                5,
+                2,
+                5,
+                1,
+                ShogiAPI,
+                board
+            )
+        ).toBe(true);
+    });
+
+    test("先手の歩が2段目に入る場合、必ず成る", () => {
+        const board = new Shogi();
+
+        board.editMode(true);
+
+        board.set(
+            5,
+            3,
+            new Piece("+FU")
+        );
+
+        board.editMode(false);
+
+        expect(
+            shogiQuestion.mustPromote(
+                5,
+                3,
+                5,
+                2,
+                ShogiAPI,
+                board
+            )
+        ).toBe(false);
+    });
+
+    test("先手の桂馬が2段目に入る場合、必ず成る", () => {
+        const board = new Shogi();
+
+        board.editMode(true);
+
+        board.set(
+            5,
+            4,
+            new Piece("+KE")
+        );
+
+        board.editMode(false);
+
+        expect(
+            shogiQuestion.mustPromote(
+                5,
+                4,
+                6,
+                2,
+                ShogiAPI,
+                board
+            )
+        ).toBe(true);
+    });
+
+    test("金は必ず成る対象ではない", () => {
+        const board = new Shogi();
+
+        board.editMode(true);
+
+        board.set(
+            5,
+            5,
+            new Piece("+KI")
+        );
+
+        board.editMode(false);
+
+        expect(
+            shogiQuestion.mustPromote(
+                5,
+                5,
+                5,
+                4,
+                ShogiAPI,
+                board
+            )
+        ).toBe(false);
+    });
+
+});
 });

@@ -4,7 +4,7 @@ import questions from "../questions.json";
 describe("questions.json", () => {
 
     test("20問存在する", () => {
-        expect(questions).toHaveLength(20);
+        expect(questions).toHaveLength(21);
     });
 
     test("すべての問題に必要な項目がある", () => {
@@ -61,7 +61,7 @@ describe("questions.json", () => {
 
         expect(new Set(ids).size).toBe(questions.length);
         expect(ids.sort((a, b) => a - b)).toEqual(
-            Array.from({ length: 20 }, (_, i) => i + 1)
+            Array.from({ length: 21 }, (_, i) => i + 1)
         );
     });
 

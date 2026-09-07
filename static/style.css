@@ -208,6 +208,7 @@ h2 {
     height: auto;
     aspect-ratio: 1 / 1;
     box-sizing: border-box;
+    min-width: 0;
 
     border-right: 1px solid #333;
     border-bottom: 1px solid #333;
@@ -241,6 +242,12 @@ h2 {
 
     .square {
         font-size: 6vw;
+    }
+
+    .square .long-piece {
+        font-size: 4vw;
+        white-space: nowrap;
+        line-height: 1;
     }
 }
 
@@ -295,4 +302,10 @@ h2 {
 .selected-hand {
     outline: 3px solid red;
     outline-offset: 2px;
+}
+
+.square .long-piece {
+    font-size: 20px;
+    white-space: nowrap;
+    line-height: 1;
 }
