@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <script src="{{ url_for('static', filename='shogi.js') }}"></script>
+    <script src="{{ url_for('static', filename='shogi-board.js') }}"></script>
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-LM9GCJ9CB6"></script>
     <script>
@@ -96,62 +97,12 @@
     <script>
         const allQuestions = {{ questions | tojson }};
 
-        const PIECE_KIND_MAP = {
-            "歩": "FU",
-            "香": "KY",
-            "桂": "KE",
-            "銀": "GI",
-            "金": "KI",
-            "角": "KA",
-            "飛": "HI",
-            "玉": "OU",
-            "と": "TO",
-            "成香": "NY",
-            "成桂": "NK",
-            "成銀": "NG",
-            "馬": "UM",
-            "龍": "RY"
-        };
-
-        const PIECE_NAME_MAP = {
-            "FU": "歩",
-            "KY": "香",
-            "KE": "桂",
-            "GI": "銀",
-            "KI": "金",
-            "KA": "角",
-            "HI": "飛",
-            "OU": "玉",
-            "TO": "と",
-            "NY": "成香",
-            "NK": "成桂",
-            "NG": "成銀",
-            "UM": "馬",
-            "RY": "龍"
-        };
 
         let questions = [];
         let currentQuestion = 0;
         let correctCount = 0;
         let currentShogiBoard = null;
         let selectedSquare = null;
-        function questionBoardToShogi(row, col) {
-            return {
-                x: 9 - col,
-                y: row + 1
-            };
-        }
-        function shogiToQuestionBoard(x, y) {
-            return {
-                row: y - 1,
-                col: 9 - x
-            };
-        }
-        function ownerToColor(owner) {
-            return owner === "S"
-                ? ShogiJS.Color.Black
-                : ShogiJS.Color.White;
-        }
         function startCategory(category) {
             if (category === "すべて") {
                 questions = [...allQuestions];
@@ -184,7 +135,7 @@
             const question = questions[currentQuestion];
 
             currentShogiBoard =
-                createShogiBoard(question);
+                shogiBoard.createShogiBoard(question, ShogiJS);
 
             selectedSquare = null;
 
@@ -226,138 +177,16 @@
         function showHandsFromShogi() {
 
             const senteHand = currentShogiBoard.hands[ShogiJS.Color.Black]
-                .map(piece => PIECE_NAME_MAP[piece.kind]);
+                .map(piece => shogiBoard.PIECE_NAME_MAP[piece.kind]);
 
             const goteHand = currentShogiBoard.hands[ShogiJS.Color.White]
-                .map(piece => PIECE_NAME_MAP[piece.kind]);
+                .map(piece => shogiBoard.PIECE_NAME_MAP[piece.kind]);
 
             document.getElementById("sente-hand").textContent =
                 `先手の持ち駒：${senteHand.join("、") || "なし"}`;
 
             document.getElementById("gote-hand").textContent =
                 `後手の持ち駒：${goteHand.join("、") || "なし"}`;
-        }
-
-        function createShogiBoard(question) {
-            const board = new ShogiJS.Shogi();
-
-            board.editMode(true);
-
-            clearShogiBoard(board);
-            setupBoardPieces(board, question);
-            setupHands(board, question);
-            setupTurn(board, question);
-
-            board.editMode(false);
-
-            return board;
-        }
-
-        function clearShogiBoard(board) {
-            for (let y = 1; y <= 9; y++) {
-                for (let x = 1; x <= 9; x++) {
-                    board.set(x, y, null);
-                }
-            }
-        }
-        function setupBoardPieces(board, question) {
-            question.board.forEach((row, rowIndex) => {
-                row.forEach((piece, colIndex) => {
-                    if (!piece) {
-                        return;
-                    }
-
-                    const owner = piece.charAt(0);
-                    const pieceName = piece.slice(1);
-                    const kind = PIECE_KIND_MAP[pieceName];
-
-                    if (!kind) {
-                        throw new Error(`未対応の駒: ${pieceName}`);
-                    }
-
-                    const { x, y } =
-                        questionBoardToShogi(rowIndex, colIndex);
-
-                    const color = ownerToColor(owner);
-
-                    const csa =
-                        color === ShogiJS.Color.Black
-                            ? `+${kind}`
-                            : `-${kind}`;
-
-                    board.set(
-                        x,
-                        y,
-                        new ShogiJS.Piece(csa)
-                    );
-                });
-            });
-        }
-
-        function setupHands(board, question) {
-            setupHand(
-                board,
-                question.hand.先手,
-                ShogiJS.Color.Black
-            );
-
-            setupHand(
-                board,
-                question.hand.後手,
-                ShogiJS.Color.White
-            );
-        }
-
-        function setupHand(board, pieces, color) {
-            pieces.forEach(pieceName => {
-                const kind = PIECE_KIND_MAP[pieceName];
-
-                if (!kind) {
-                    throw new Error(`未対応の持ち駒: ${pieceName}`);
-                }
-
-                const csa =
-                    color === ShogiJS.Color.Black
-                        ? `+${kind}`
-                        : `-${kind}`;
-
-                board.pushToHand(
-                    new ShogiJS.Piece(csa)
-                );
-            });
-        }
-
-        function setupTurn(board, question) {
-            const move = question.move;
-
-            if (move.from_hand) {
-                const owner = move.piece.charAt(0);
-
-                board.setTurn(
-                    ownerToColor(owner)
-                );
-
-                return;
-            }
-
-            const [file, rank] = move.from;
-
-            const { row, col } =
-                shogiToQuestionBoard(file, rank);
-
-            const piece = question.board[row][col];
-
-            if (!piece) {
-                throw new Error(
-                    `移動元に駒がありません: ${file}${rank}`
-                );
-            }
-
-            const owner = piece.charAt(0);
-
-            board.setTurn(
-                ownerToColor(owner)
-            );
         }
 
         function showBoardFromShogi() {
@@ -370,7 +199,7 @@
                 for (let col = 0; col < 9; col++) {
 
                     const { x, y } =
-                        questionBoardToShogi(row, col);
+                        shogiBoard.questionBoardToShogi(row, col);
 
                     const piece =
                         currentShogiBoard.get(x, y);
@@ -397,7 +226,7 @@
                                 : "G";
 
                         const pieceName =
-                            PIECE_NAME_MAP[piece.kind];
+                            shogiBoard.PIECE_NAME_MAP[piece.kind];
 
                         if (!pieceName) {
                             throw new Error(
@@ -442,50 +271,6 @@
             showBoardFromShogi();
         }
 
-        function executeCorrectMove(move) {
-            if (move.from_hand) {
-                dropPiece(move);
-            } else {
-                movePiece(move);
-            }
-        }
-
-        function dropPiece(move) {
-            const [file, rank] = move.to;
-
-            const pieceName = move.piece.slice(1);
-            const kind = PIECE_KIND_MAP[pieceName];
-
-            if (!kind) {
-                throw new Error(
-                    `未対応の駒: ${pieceName}`
-                );
-            }
-
-            const owner = move.piece.charAt(0);
-            const color = ownerToColor(owner);
-
-            currentShogiBoard.drop(
-                file,
-                rank,
-                kind,
-                color
-            );
-        }
-
-        function movePiece(move) {
-            const [fromFile, fromRank] = move.from;
-            const [toFile, toRank] = move.to;
-
-            currentShogiBoard.move(
-                fromFile,
-                fromRank,
-                toFile,
-                toRank,
-                move.promote || false
-            );
-        }
-
         function checkAnswer(choice) {
             const question = questions[currentQuestion];
 
@@ -516,7 +301,11 @@
 
             buttons[choice].classList.add("correct");
 
-            executeCorrectMove(question.move);
+            shogiBoard.executeCorrectMove(
+                currentShogiBoard,
+                question.move,
+                ShogiJS
+            );
 
             showBoardFromShogi();
             showHandsFromShogi();

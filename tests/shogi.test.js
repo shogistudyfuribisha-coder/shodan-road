@@ -1,0 +1,153 @@
+import { describe, test, expect } from "vitest";
+import { Shogi, Color, Piece } from "shogi.js";
+import questions from "../questions.json";
+import shogiBoard from "../static/shogi-board.js";
+
+describe("shogi.js", () => {
+
+    test("盤面を作成して駒を配置できる", () => {
+        const board = new Shogi();
+
+        board.editMode(true);
+
+        board.set(
+            5,
+            5,
+            new Piece("+FU")
+        );
+
+        board.editMode(false);
+
+        const piece = board.get(5, 5);
+
+        expect(piece).not.toBeNull();
+        expect(piece.kind).toBe("FU");
+        expect(piece.color).toBe(Color.Black);
+    });
+
+    test("20問すべての盤面をshogi.jsで再現できる", () => {
+        questions.forEach(question => {
+
+            const board =
+                shogiBoard.createShogiBoard(
+                    question,
+                    { Shogi, Color, Piece }
+                );
+
+            question.board.forEach((row, rowIndex) => {
+                row.forEach((piece, colIndex) => {
+
+                    const { x, y } =
+                        shogiBoard.questionBoardToShogi(
+                            rowIndex,
+                            colIndex
+                        );
+
+                    const actual = board.get(x, y);
+
+                    if (!piece) {
+                        expect(actual).toBeNull();
+                        return;
+                    }
+
+                    const owner = piece.charAt(0);
+                    const pieceName = piece.slice(1);
+
+                    expect(actual).not.toBeNull();
+
+                    expect(actual.kind).toBe(
+                        shogiBoard.PIECE_KIND_MAP[pieceName]
+                    );
+
+                    expect(actual.color).toBe(
+                        shogiBoard.ownerToColor(
+                            owner,
+                            { Color }
+                        )
+                    );
+                });
+            });
+        });
+    });
+
+    test("20問すべての正解手をshogi.jsで実行できる", () => {
+        questions.forEach(question => {
+
+            const board =
+                shogiBoard.createShogiBoard(
+                    question,
+                    { Shogi, Color, Piece }
+                );
+
+            expect(() => {
+                shogiBoard.executeCorrectMove(
+                    board,
+                    question.move,
+                    { Shogi, Color, Piece }
+                );
+            }).not.toThrow();
+        });
+    });
+
+    test("20問すべての正解手を実行した後の盤面が正しい", () => {
+        questions.forEach(question => {
+
+            const board =
+                shogiBoard.createShogiBoard(
+                    question,
+                    { Shogi, Color, Piece }
+                );
+
+            const move = question.move;
+
+            let expectedKind;
+            let expectedColor;
+
+            if (move.from_hand) {
+                const owner = move.piece.charAt(0);
+                const pieceName = move.piece.slice(1);
+
+                expectedKind =
+                    shogiBoard.PIECE_KIND_MAP[pieceName];
+
+                expectedColor =
+                    shogiBoard.ownerToColor(
+                        owner,
+                        { Color }
+                    );
+            } else {
+                const [fromFile, fromRank] = move.from;
+
+                const movingPiece =
+                    board.get(fromFile, fromRank);
+
+                expect(movingPiece).not.toBeNull();
+
+                expectedKind = movingPiece.kind;
+                expectedColor = movingPiece.color;
+            }
+
+            shogiBoard.executeCorrectMove(
+                board,
+                move,
+                { Shogi, Color, Piece }
+            );
+
+            const [toFile, toRank] = move.to;
+            const actual = board.get(toFile, toRank);
+
+            expect(actual).not.toBeNull();
+
+            expect(actual.kind).toBe(expectedKind);
+            expect(actual.color).toBe(expectedColor);
+
+            if (!move.from_hand) {
+                const [fromFile, fromRank] = move.from;
+
+                expect(
+                    board.get(fromFile, fromRank)
+                ).toBeNull();
+            }
+        });
+    });
+});
