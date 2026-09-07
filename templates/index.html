@@ -106,6 +106,7 @@
         let selectedSquare = null;
         let pendingBoardMove = null;
         let selectedHandPiece = null;
+        let legalMoves = [];
         function startCategory(category) {
             if (category === "すべて") {
                 questions = [...allQuestions];
@@ -143,6 +144,7 @@
             selectedSquare = null;
             pendingBoardMove = null;
             selectedHandPiece = null;
+            legalMoves = [];
 
             document.getElementById("question-number").textContent =
                 `第${currentQuestion + 1}問 / 全${questions.length}問`;
@@ -292,11 +294,19 @@
 
                     square.className = "square";
                     if (
-                        selectedSquare !== null &&
+                        selectedSquare &&
                         selectedSquare.x === x &&
                         selectedSquare.y === y
                     ) {
                         square.classList.add("selected");
+                    }
+
+                    const isLegalDestination = legalMoves.some(move => {
+                        return move.to.x === x && move.to.y === y;
+                    });
+
+                    if (isLegalDestination) {
+                        square.classList.add("legal-move");
                     }
                     square.onclick = function() {
                         selectSquare(x, y);
@@ -359,6 +369,7 @@
 
             // 盤上の駒を選択していたら解除
             selectedSquare = null;
+            legalMoves = [];
 
             selectedHandPiece = {
                 kind,
@@ -485,6 +496,11 @@
 
                 selectedSquare = { x, y };
 
+                legalMoves = shogiQuestion.getLegalMovesFrom(
+                    currentShogiBoard,
+                    selectedSquare
+                );
+
                 showBoardFromShogi();
                 return;
             }
@@ -494,11 +510,19 @@
             ) {
                 selectedSquare = { x, y };
 
+                legalMoves = [];
+
+                legalMoves = shogiQuestion.getLegalMovesFrom(
+                    currentShogiBoard,
+                    selectedSquare
+                );
+
                 showBoardFromShogi();
                 return;
             }
             if (selectedSquare.x === x && selectedSquare.y === y) {
                 selectedSquare = null;
+                legalMoves = [];
 
                 showBoardFromShogi();
                 return;
@@ -579,6 +603,7 @@
                 console.log("王を取られる手（自殺手）は指せません");
                 pendingBoardMove = null;
                 selectedSquare = null;
+                legalMoves = [];
                 showBoardFromShogi();
                 return;
             }
@@ -613,6 +638,7 @@
 
                 pendingBoardMove = null;
                 selectedSquare = null;
+                legalMoves = [];
 
                 handleBoardAnswer(
                     questions[currentQuestion],
@@ -746,6 +772,7 @@
             selectedSquare = null;
             selectedHandPiece = null;
             pendingBoardMove = null;
+            legalMoves = [];
 
             if (isCorrect) {
                 const isMate = shogiQuestion.isCheckmate(currentShogiBoard);

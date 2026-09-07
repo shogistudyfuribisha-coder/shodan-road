@@ -309,3 +309,20 @@ h2 {
     white-space: nowrap;
     line-height: 1;
 }
+
+.square.legal-move {
+    background-color: rgba(80, 160, 80, 0.35);
+}
+
+.square.legal-move::after {
+    content: "";
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background-color: rgba(40, 100, 40, 0.7);
+    position: absolute;
+}
+
+.square {
+    position: relative;
+}

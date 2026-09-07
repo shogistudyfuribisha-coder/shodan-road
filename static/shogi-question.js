@@ -37,7 +37,9 @@ const shogiQuestion = {
     canEvadeCheckByMove,
     canEvadeCheckByDrop,
     isCheckmate,
-    isUchifuzume
+    isUchifuzume,
+    getLegalMovesFrom,
+    getLegalDrops
 };
 
 if (typeof module !== "undefined") {
@@ -177,7 +179,49 @@ function isInCheck(board, color) {
 function isLegalMove(board, from, to, promote) {
     return !isSuicideMove(board, from, to, promote);
 }
+function getLegalMovesFrom(board, from) {
+    const piece = board.get(from.x, from.y);
 
+    if (!piece) {
+        return [];
+    }
+
+    const pseudoMoves = board.getMovesFrom(from.x, from.y);
+    const legalMoves = [];
+
+    pseudoMoves.forEach(move => {
+        const canMoveWithoutPromotion =
+            isLegalMove(
+                board,
+                from,
+                move.to,
+                false
+            );
+
+        const canMoveWithPromotion =
+            isLegalMove(
+                board,
+                from,
+                move.to,
+                true
+            );
+
+        if (canMoveWithoutPromotion || canMoveWithPromotion) {
+            legalMoves.push({
+                from: {
+                    x: from.x,
+                    y: from.y
+                },
+                to: {
+                    x: move.to.x,
+                    y: move.to.y
+                }
+            });
+        }
+    });
+
+    return legalMoves;
+}
 function isLegalDrop(board, to, kind, color) {
     if (isSuicideDrop(board, to, kind, color)) {
         return false;
@@ -187,7 +231,18 @@ function isLegalDrop(board, to, kind, color) {
     }
     return true;
 }
+function getLegalDrops(board, color) {
+    const pseudoDrops = board.getDropsBy(color);
 
+    return pseudoDrops.filter(drop => {
+        return isLegalDrop(
+            board,
+            drop.to,
+            drop.kind,
+            color
+        );
+    });
+}
 function canEvadeCheckByMove(board, from, to, promote) {
     return isLegalMove(board, from, to, promote);
 }
@@ -272,4 +327,4 @@ function isCheckmate(board, color) {
     }
 }
 
-
+
