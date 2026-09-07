@@ -6,6 +6,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <script src="{{ url_for('static', filename='shogi.js') }}"></script>
     <script src="{{ url_for('static', filename='shogi-board.js') }}"></script>
+    <script src="{{ url_for('static', filename='shogi-question.js') }}"></script>
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-LM9GCJ9CB6"></script>
     <script>
@@ -397,7 +398,7 @@
                 );
 
                 const isCorrect =
-                    isCorrectMove(
+                    shogiQuestion.isCorrectMove(
                         userMove,
                         questions[currentQuestion].move
                     );
@@ -530,7 +531,7 @@
                 );
 
                 const isCorrect =
-                    isCorrectMove(
+                    shogiQuestion.isCorrectMove(
                         userMove,
                         questions[currentQuestion].move
                     );
@@ -602,32 +603,6 @@
             choicesElement.appendChild(noPromoteButton);
         }
 
-        function isCorrectMove(userMove, correctMove) {
-            if (correctMove.from_hand) {
-                if (!userMove.from_hand) {
-                    return false;
-                }
-
-                return (
-                    userMove.piece === correctMove.piece &&
-                    userMove.to.x === correctMove.to[0] &&
-                    userMove.to.y === correctMove.to[1]
-                );
-            }
-
-            if (userMove.from_hand) {
-                return false;
-            }
-
-            return (
-                userMove.from.x === correctMove.from[0] &&
-                userMove.from.y === correctMove.from[1] &&
-                userMove.to.x === correctMove.to[0] &&
-                userMove.to.y === correctMove.to[1] &&
-                userMove.promote === (correctMove.promote || false)
-            );
-        }
-        
         function canPromote(fromX, fromY, toX, toY, ShogiAPI) {
             const piece = currentShogiBoard.get(fromX, fromY);
 

@@ -2,6 +2,7 @@ import { describe, test, expect } from "vitest";
 import { Shogi, Color, Piece } from "shogi.js";
 import questions from "../questions.json";
 import shogiBoard from "../static/shogi-board.js";
+import shogiQuestion from "../static/shogi-question.js";
 
 describe("shogi.js", () => {
 
@@ -357,5 +358,138 @@ describe("shogi.js", () => {
                 Color.Black
             );
         }).toThrow();
+    });
+
+    test("盤上の正しい着手を正解と判定できる", () => {
+        const userMove = {
+            from: {
+                x: 6,
+                y: 9
+            },
+            to: {
+                x: 7,
+                y: 8
+            },
+            promote: false
+        };
+
+        const correctMove = {
+            from: [6, 9],
+            to: [7, 8]
+        };
+
+        expect(
+            shogiQuestion.isCorrectMove(userMove, correctMove)
+        ).toBe(true);
+    });
+
+    test("盤上の移動先が違えば不正解になる", () => {
+        const userMove = {
+            from: {
+                x: 6,
+                y: 9
+            },
+            to: {
+                x: 6,
+                y: 8
+            },
+            promote: false
+        };
+
+        const correctMove = {
+            from: [6, 9],
+            to: [7, 8]
+        };
+
+        expect(
+            shogiQuestion.isCorrectMove(userMove, correctMove)
+        ).toBe(false);
+    });
+
+    test("成る・成らないが違えば不正解になる", () => {
+        const userMove = {
+            from: {
+                x: 7,
+                y: 4
+            },
+            to: {
+                x: 7,
+                y: 3
+            },
+            promote: false
+        };
+
+        const correctMove = {
+            from: [7, 4],
+            to: [7, 3],
+            promote: true
+        };
+
+        expect(
+            shogiQuestion.isCorrectMove(userMove, correctMove)
+        ).toBe(false);
+    });
+
+    test("正しい駒打ちを正解と判定できる", () => {
+        const userMove = {
+            from_hand: true,
+            piece: "S金",
+            to: {
+                x: 5,
+                y: 2
+            }
+        };
+
+        const correctMove = {
+            from_hand: true,
+            piece: "S金",
+            to: [5, 2]
+        };
+
+        expect(
+            shogiQuestion.isCorrectMove(userMove, correctMove)
+        ).toBe(true);
+    });
+
+    test("駒の種類が違う駒打ちは不正解になる", () => {
+        const userMove = {
+            from_hand: true,
+            piece: "S銀",
+            to: {
+                x: 5,
+                y: 2
+            }
+        };
+
+        const correctMove = {
+            from_hand: true,
+            piece: "S金",
+            to: [5, 2]
+        };
+
+        expect(
+            shogiQuestion.isCorrectMove(userMove, correctMove)
+        ).toBe(false);
+    });
+
+    test("駒打ちの場所が違えば不正解になる", () => {
+        const userMove = {
+            from_hand: true,
+            piece: "S金",
+            to: {
+                x: 4,
+                y: 2
+            }
+        };
+
+        const correctMove = {
+            from_hand: true,
+            piece: "S金",
+            to: [5, 2]
+        };
+
+        expect(
+            shogiQuestion.isCorrectMove(userMove, correctMove)
+        ).toBe(false);
     });
 });
