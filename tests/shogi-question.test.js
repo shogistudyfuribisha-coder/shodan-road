@@ -687,6 +687,89 @@ describe("詰み判定 (isCheckmate)", () => {
         expect(board.turn).toBe(Color.Black);
     });
 });
+
+describe("打ち歩詰め (isUchifuzume)", () => {
+    function createEmptyBoard() {
+        const board = new Shogi();
+        board.editMode(true);
+        for (let y = 1; y <= 9; y++) {
+            for (let x = 1; x <= 9; x++) {
+                board.set(x, y, null);
+            }
+        }
+        return board;
+    }
+
+    test("1. 打った歩が王手にならない場合は合法（打ち歩詰めではない）", () => {
+        const board = createEmptyBoard();
+        board.set(5, 1, new Piece("-OU"));
+        board.pushToHand(new Piece("+FU"));
+        board.setTurn(Color.Black);
+        board.editMode(false);
+
+        // 5五に歩を打つ（王手にならない）
+        expect(shogiQuestion.isUchifuzume(board, { x: 5, y: 5 }, "FU", Color.Black)).toBe(false);
+        expect(shogiQuestion.isLegalDrop(board, { x: 5, y: 5 }, "FU", Color.Black)).toBe(true);
+    });
+
+    test("2. 打った歩が王手になるが相手に回避手がある場合は合法（打ち歩詰めではない）", () => {
+        const board = createEmptyBoard();
+        // 1一後手玉、2一後手歩（逃げ道を塞ぐ壁）。
+        // 先手が1二に歩を打つが、1三にヒモがないため、1一玉が1二歩を取れる
+        board.set(1, 1, new Piece("-OU"));
+        board.set(2, 1, new Piece("-FU"));
+        board.pushToHand(new Piece("+FU"));
+        board.setTurn(Color.Black);
+        board.editMode(false);
+
+        expect(shogiQuestion.isUchifuzume(board, { x: 1, y: 2 }, "FU", Color.Black)).toBe(false);
+        expect(shogiQuestion.isLegalDrop(board, { x: 1, y: 2 }, "FU", Color.Black)).toBe(true);
+    });
+
+    test("3. 打った歩で詰みになる場合は不合法（打ち歩詰め）", () => {
+        const board = createEmptyBoard();
+        // 1一後手玉、2一後手歩、1三先手と金（1二にヒモ＋2二を封鎖）。
+        // 先手が1二に歩を打つと、後手玉は逃げ場がなく歩も取れず詰みとなる。
+        board.set(1, 1, new Piece("-OU"));
+        board.set(2, 1, new Piece("-FU"));
+        board.set(1, 3, new Piece("+TO"));
+        board.pushToHand(new Piece("+FU"));
+        board.setTurn(Color.Black);
+        board.editMode(false);
+
+        expect(shogiQuestion.isUchifuzume(board, { x: 1, y: 2 }, "FU", Color.Black)).toBe(true);
+        expect(shogiQuestion.isLegalDrop(board, { x: 1, y: 2 }, "FU", Color.Black)).toBe(false);
+    });
+
+    test("4. 二歩とは独立して判定される（二歩の筋への歩打ちは打ち歩詰めではない）", () => {
+        const board = createEmptyBoard();
+        // 1一後手玉、1三に先手歩（同筋に歩がある二歩の状態）
+        board.set(1, 1, new Piece("-OU"));
+        board.set(1, 3, new Piece("+FU"));
+        board.pushToHand(new Piece("+FU"));
+        board.setTurn(Color.Black);
+        board.editMode(false);
+
+        // 二歩のマスへの歩打ちは、打ち歩詰め（isUchifuzume）ではなく false
+        expect(shogiQuestion.isUchifuzume(board, { x: 1, y: 2 }, "FU", Color.Black)).toBe(false);
+        // しかし二歩のため合法的（isLegalDrop）でもない
+        expect(shogiQuestion.isLegalDrop(board, { x: 1, y: 2 }, "FU", Color.Black)).toBe(false);
+    });
+
+    test("5. 歩以外の駒（金など）で同じ局面で打って詰ませる場合は合法（打ち歩詰めではない）", () => {
+        const board = createEmptyBoard();
+        board.set(1, 1, new Piece("-OU"));
+        board.set(2, 1, new Piece("-FU"));
+        board.set(1, 3, new Piece("+TO"));
+        board.pushToHand(new Piece("+KI"));
+        board.setTurn(Color.Black);
+        board.editMode(false);
+
+        // 金を打って詰ませるのは「頭金」であり合法（打ち歩詰めではない）
+        expect(shogiQuestion.isUchifuzume(board, { x: 1, y: 2 }, "KI", Color.Black)).toBe(false);
+        expect(shogiQuestion.isLegalDrop(board, { x: 1, y: 2 }, "KI", Color.Black)).toBe(true);
+    });
+});
 });
 
 

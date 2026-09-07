@@ -382,14 +382,14 @@
             }
 
             if (
-                shogiQuestion.isSuicideDrop(
+                !shogiQuestion.isLegalDrop(
                     currentShogiBoard,
                     to,
                     handPiece.kind,
                     handPiece.color
                 )
             ) {
-                console.log("王手放置または自玉が取られるため駒を打てません");
+                console.log("不合法な着手（王手放置または打ち歩詰め）のため駒を打てません");
                 selectedHandPiece = null;
                 showBoardFromShogi();
                 showHandsFromShogi();

@@ -3,8 +3,8 @@ import questions from "../questions.json";
 
 describe("questions.json", () => {
 
-    test("23問存在する", () => {
-        expect(questions).toHaveLength(23);
+    test("24問存在する", () => {
+        expect(questions).toHaveLength(24);
     });
 
     test("すべての問題に必要な項目がある", () => {
@@ -56,12 +56,12 @@ describe("questions.json", () => {
         });
     });
 
-    test("問題IDが1〜23で重複していない", () => {
+    test("問題IDが1〜24で重複していない", () => {
         const ids = questions.map(question => question.id);
 
         expect(new Set(ids).size).toBe(questions.length);
         expect(ids.sort((a, b) => a - b)).toEqual(
-            Array.from({ length: 23 }, (_, i) => i + 1)
+            Array.from({ length: 24 }, (_, i) => i + 1)
         );
     });
 

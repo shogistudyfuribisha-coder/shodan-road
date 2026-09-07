@@ -36,7 +36,8 @@ const shogiQuestion = {
     isLegalDrop,
     canEvadeCheckByMove,
     canEvadeCheckByDrop,
-    isCheckmate
+    isCheckmate,
+    isUchifuzume
 };
 
 if (typeof module !== "undefined") {
@@ -178,7 +179,13 @@ function isLegalMove(board, from, to, promote) {
 }
 
 function isLegalDrop(board, to, kind, color) {
-    return !isSuicideDrop(board, to, kind, color);
+    if (isSuicideDrop(board, to, kind, color)) {
+        return false;
+    }
+    if (isUchifuzume(board, to, kind, color)) {
+        return false;
+    }
+    return true;
 }
 
 function canEvadeCheckByMove(board, from, to, promote) {
@@ -188,6 +195,28 @@ function canEvadeCheckByMove(board, from, to, promote) {
 function canEvadeCheckByDrop(board, to, kind, color) {
     return isLegalDrop(board, to, kind, color);
 }
+
+function isUchifuzume(board, to, kind, color) {
+    if (kind !== "FU") {
+        return false;
+    }
+
+    const targetColor = color !== undefined ? color : board.turn;
+
+    try {
+        board.drop(to.x, to.y, kind, targetColor);
+    } catch (error) {
+        return false;
+    }
+
+    // drop後は手番が相手に渡っているため、相手玉の詰みを判定
+    const isMate = isCheckmate(board, board.turn);
+
+    board.undrop(to.x, to.y);
+
+    return isMate;
+}
+
 
 function isCheckmate(board, color) {
     const targetColor = color !== undefined ? color : board.turn;
