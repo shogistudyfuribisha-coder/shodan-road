@@ -158,6 +158,7 @@
             document.getElementById("result").textContent = "";
             document.getElementById("explanation").textContent = "";
             document.getElementById("next-button").style.display = "none";
+            document.getElementById("restart-button").style.display = "none";
         }
 
         function showChoices(question) {
@@ -792,7 +793,8 @@
 
             document.getElementById("next-button").style.display =
                 "none";
-
+            document.getElementById("restart-button").style.display =
+                "block";
             const history = saveHistory(rate);
 
             showBestRecord(history);
