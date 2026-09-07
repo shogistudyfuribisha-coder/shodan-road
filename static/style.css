@@ -287,3 +287,7 @@ h2 {
 #category-buttons button:hover {
     background: #eee;
 }
+
+.square.selected {
+    outline: 3px solid red;
+}

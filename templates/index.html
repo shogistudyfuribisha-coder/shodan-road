@@ -134,6 +134,7 @@
         let currentQuestion = 0;
         let correctCount = 0;
         let currentShogiBoard = null;
+        let selectedSquare = null;
         function questionBoardToShogi(row, col) {
             return {
                 x: 9 - col,
@@ -184,6 +185,8 @@
 
             currentShogiBoard =
                 createShogiBoard(question);
+
+            selectedSquare = null;
 
             document.getElementById("question-number").textContent =
                 `第${currentQuestion + 1}問 / 全${questions.length}問`;
@@ -376,6 +379,16 @@
                         document.createElement("div");
 
                     square.className = "square";
+                    if (
+                        selectedSquare !== null &&
+                        selectedSquare.x === x &&
+                        selectedSquare.y === y
+                    ) {
+                        square.classList.add("selected");
+                    }
+                    square.onclick = function() {
+                        selectSquare(x, y);
+                    };
 
                     if (piece !== null) {
                         const owner =
@@ -408,6 +421,25 @@
                     boardElement.appendChild(square);
                 }
             }
+        }
+
+        function selectSquare(x, y) {
+            const piece = currentShogiBoard.get(x, y);
+
+            if (piece === null) {
+                return;
+            }
+
+            if (selectedSquare !== null) {
+                return;
+            }
+
+            selectedSquare = {
+                x: x,
+                y: y
+            };
+
+            showBoardFromShogi();
         }
 
         function executeCorrectMove(move) {
