@@ -293,4 +293,146 @@ describe("canPromote", () => {
     });
 
 });
+
+describe("isSuicideMove & isSuicideDrop (自殺手・王手放置の禁止)", () => {
+    function createEmptyBoard() {
+        const board = new Shogi();
+        board.editMode(true);
+        for (let y = 1; y <= 9; y++) {
+            for (let x = 1; x <= 9; x++) {
+                board.set(x, y, null);
+            }
+        }
+        return board;
+    }
+
+    test("玉が相手の利きがあるマスに移動しようとすると自殺手（true）と判定される", () => {
+        const board = createEmptyBoard();
+        board.set(7, 9, new Piece("+OU"));
+        board.set(8, 2, new Piece("-HI"));
+        board.setTurn(Color.Black);
+        board.editMode(false);
+
+        // 7九の玉を8筋（8九）に動かすと相手飛車の利きに入る
+        expect(
+            shogiQuestion.isSuicideMove(board, { x: 7, y: 9 }, { x: 8, y: 9 }, false)
+        ).toBe(true);
+    });
+
+    test("玉が安全なマスに移動する場合は自殺手ではない（false）と判定される", () => {
+        const board = createEmptyBoard();
+        board.set(7, 9, new Piece("+OU"));
+        board.set(8, 2, new Piece("-HI"));
+        board.setTurn(Color.Black);
+        board.editMode(false);
+
+        // 7九の玉を7八に動かすのは安全
+        expect(
+            shogiQuestion.isSuicideMove(board, { x: 7, y: 9 }, { x: 7, y: 8 }, false)
+        ).toBe(false);
+    });
+
+    test("ピンされている駒を横に動かすと自殺手（true）と判定される", () => {
+        const board = createEmptyBoard();
+        board.set(5, 9, new Piece("+OU"));
+        board.set(5, 7, new Piece("+KI"));
+        board.set(5, 1, new Piece("-HI"));
+        board.setTurn(Color.Black);
+        board.editMode(false);
+
+        // 5七の金を4七に横移動すると後ろの玉が飛車に取られる
+        expect(
+            shogiQuestion.isSuicideMove(board, { x: 5, y: 7 }, { x: 4, y: 7 }, false)
+        ).toBe(true);
+    });
+
+    test("ピンされている駒を射線上前方に動かす手は安全（false）と判定される", () => {
+        const board = createEmptyBoard();
+        board.set(5, 9, new Piece("+OU"));
+        board.set(5, 7, new Piece("+KI"));
+        board.set(5, 1, new Piece("-HI"));
+        board.setTurn(Color.Black);
+        board.editMode(false);
+
+        // 5七の金を5六に前進させるのは射線を防ぎ続けるため安全
+        expect(
+            shogiQuestion.isSuicideMove(board, { x: 5, y: 7 }, { x: 5, y: 6 }, false)
+        ).toBe(false);
+    });
+
+    test("王手をかけられている時、王手と無関係な駒を動かす手は自殺手（true）と判定される", () => {
+        const board = createEmptyBoard();
+        board.set(5, 9, new Piece("+OU"));
+        board.set(5, 1, new Piece("-HI")); // 王手
+        board.set(1, 7, new Piece("+FU"));
+        board.setTurn(Color.Black);
+        board.editMode(false);
+
+        // 1七の歩を1六に動かす手は王手放置なので自殺手
+        expect(
+            shogiQuestion.isSuicideMove(board, { x: 1, y: 7 }, { x: 1, y: 6 }, false)
+        ).toBe(true);
+    });
+
+    test("王手をかけられている時、王手している相手駒を取る手は安全（false）と判定される", () => {
+        const board = createEmptyBoard();
+        board.set(5, 9, new Piece("+OU"));
+        board.set(5, 8, new Piece("-KI")); // 至近距離で王手
+        board.setTurn(Color.Black);
+        board.editMode(false);
+
+        // 5九の玉で5八の金を取る手は王手解除なので安全
+        expect(
+            shogiQuestion.isSuicideMove(board, { x: 5, y: 9 }, { x: 5, y: 8 }, false)
+        ).toBe(false);
+    });
+
+    test("王手されている時に、合駒として王手を遮断する持ち駒打ちは安全（false）と判定される", () => {
+        const board = createEmptyBoard();
+        board.set(5, 9, new Piece("+OU"));
+        board.set(5, 1, new Piece("-HI")); // 王手
+        board.pushToHand(new Piece("+KI"));
+        board.setTurn(Color.Black);
+        board.editMode(false);
+
+        // 5五に金を打って合駒にする手は安全
+        expect(
+            shogiQuestion.isSuicideDrop(board, { x: 5, y: 5 }, "KI", Color.Black)
+        ).toBe(false);
+    });
+
+    test("王手されている時に、王手を防げないマスへの持ち駒打ちは自殺手（true）と判定される", () => {
+        const board = createEmptyBoard();
+        board.set(5, 9, new Piece("+OU"));
+        board.set(5, 1, new Piece("-HI")); // 王手
+        board.pushToHand(new Piece("+KI"));
+        board.setTurn(Color.Black);
+        board.editMode(false);
+
+        // 1五に金を打つ手は王手放置なので自殺手
+        expect(
+            shogiQuestion.isSuicideDrop(board, { x: 1, y: 5 }, "KI", Color.Black)
+        ).toBe(true);
+    });
+
+    test("判定後も盤面の状態・持ち駒・手番が完全に元に戻っていること", () => {
+        const board = createEmptyBoard();
+        board.set(5, 9, new Piece("+OU"));
+        board.set(5, 1, new Piece("-HI"));
+        board.pushToHand(new Piece("+KI"));
+        board.setTurn(Color.Black);
+        board.editMode(false);
+
+        shogiQuestion.isSuicideDrop(board, { x: 5, y: 5 }, "KI", Color.Black);
+        shogiQuestion.isSuicideDrop(board, { x: 1, y: 5 }, "KI", Color.Black);
+
+        expect(board.get(5, 9)?.kind).toBe("OU");
+        expect(board.get(5, 1)?.kind).toBe("HI");
+        expect(board.get(5, 5)).toBeNull();
+        expect(board.get(1, 5)).toBeNull();
+        expect(board.hands[Color.Black]).toHaveLength(1);
+        expect(board.turn).toBe(Color.Black);
+    });
 });
+});
+

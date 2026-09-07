@@ -28,7 +28,9 @@ const shogiQuestion = {
     isCorrectMove,
     canPromote,
     canSelectPiece,
-    mustPromote
+    mustPromote,
+    isSuicideMove,
+    isSuicideDrop
 };
 
 if (typeof module !== "undefined") {
@@ -119,3 +121,43 @@ function mustPromote(fromX, fromY, toX, toY, ShogiAPI, board) {
 
     return false;
 }
+
+function isSuicideMove(board, from, to, promote) {
+    const movingPiece = board.get(from.x, from.y);
+    if (!movingPiece) {
+        return true;
+    }
+
+    const color = movingPiece.color;
+    const targetPiece = board.get(to.x, to.y);
+    const captureKind = targetPiece ? targetPiece.kind : undefined;
+    const fromKind = movingPiece.kind;
+
+    try {
+        board.move(from.x, from.y, to.x, to.y, promote);
+    } catch (error) {
+        return true;
+    }
+
+    const isCheck = board.isCheck(color);
+    const afterPiece = board.get(to.x, to.y);
+    const didPromote = afterPiece ? (fromKind !== afterPiece.kind) : promote;
+
+    board.unmove(from.x, from.y, to.x, to.y, didPromote, captureKind);
+
+    return isCheck;
+}
+
+function isSuicideDrop(board, to, kind, color) {
+    try {
+        board.drop(to.x, to.y, kind, color);
+    } catch (error) {
+        return true;
+    }
+
+    const isCheck = board.isCheck(color);
+
+    board.undrop(to.x, to.y);
+
+    return isCheck;
+}

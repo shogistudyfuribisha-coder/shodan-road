@@ -380,6 +380,22 @@
             ) {
                 return;
             }
+
+            if (
+                shogiQuestion.isSuicideDrop(
+                    currentShogiBoard,
+                    to,
+                    handPiece.kind,
+                    handPiece.color
+                )
+            ) {
+                console.log("王手放置または自玉が取られるため駒を打てません");
+                selectedHandPiece = null;
+                showBoardFromShogi();
+                showHandsFromShogi();
+                return;
+            }
+
             try {
                 currentShogiBoard.drop(
                     to.x,
@@ -498,6 +514,16 @@
                 y
             };
 
+            if (
+                shogiQuestion.isSuicideMove(currentShogiBoard, from, to, false) &&
+                shogiQuestion.isSuicideMove(currentShogiBoard, from, to, true)
+            ) {
+                console.log("王を取られる手（自殺手）は指せません");
+                selectedSquare = null;
+                showBoardFromShogi();
+                return;
+            }
+
             const mustPromote =
                 shogiQuestion.mustPromote(
                     from.x,
@@ -541,6 +567,22 @@
             ) {
                 return;
             }
+
+            if (
+                shogiQuestion.isSuicideMove(
+                    currentShogiBoard,
+                    from,
+                    to,
+                    promote
+                )
+            ) {
+                console.log("王を取られる手（自殺手）は指せません");
+                pendingBoardMove = null;
+                selectedSquare = null;
+                showBoardFromShogi();
+                return;
+            }
+
             try {
                 currentShogiBoard.move(
                     from.x,
