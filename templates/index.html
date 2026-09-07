@@ -552,6 +552,14 @@
                 y
             };
 
+            const isLegalDestination = legalMoves.some(move => {
+                return move.to.x === x && move.to.y === y;
+            });
+
+            if (!isLegalDestination) {
+                return;
+            }
+
             if (
                 shogiQuestion.isSuicideMove(currentShogiBoard, from, to, false) &&
                 shogiQuestion.isSuicideMove(currentShogiBoard, from, to, true)
