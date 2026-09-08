@@ -499,3 +499,29 @@ button.correct-hand {
     color: #555;
     line-height: 1.6;
 }
+/* 読みのトレーニング */
+#reading-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin: 15px 0 25px;
+}
+
+#reading-buttons button {
+    padding: 10px 24px;
+    border: 1px solid #bbb;
+    border-radius: 8px;
+    background-color: #fff;
+    color: #444;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+#reading-buttons button:hover {
+    background-color: #eee;
+}
+
+#reading-buttons button:active {
+    transform: translateY(1px);
+}

@@ -35,6 +35,12 @@
             <button onclick="startCategory('テスト')">テスト</button>
         </div>
 
+        <h2>読みのトレーニング</h2>
+
+        <div id="reading-buttons">
+            <button onclick="startThreePly()">3手読み</button>
+        </div>
+
         <h2>学習・復習</h2>
 
         <div id="learning-buttons">
@@ -135,6 +141,7 @@
     </div>
     <script>
         const allQuestions = {{questions | tojson }};
+        const threePlyQuestions = {{three_ply_questions | tojson }};
 
 
         let questions = [];
@@ -149,6 +156,7 @@
         let legalMoves = [];
         let legalDrops = [];
         let correctMoveHint = null;
+        let currentMoveIndex = 0;
         function startCategory(category) {
             if (category === "すべて") {
                 questions = [...allQuestions];
@@ -165,6 +173,22 @@
             correctCount = 0;
             questionResults = [];
             singleQuestionMode = false;
+
+            document.getElementById("category-screen").style.display = "none";
+            document.getElementById("game-screen").style.display = "block";
+
+            showQuestion();
+        }
+        function startThreePly() {
+            questions = [...threePlyQuestions];
+
+            questions.sort(() => Math.random() - 0.5);
+
+            currentQuestion = 0;
+            correctCount = 0;
+            questionResults = [];
+            singleQuestionMode = false;
+            currentMoveIndex = 0;
 
             document.getElementById("category-screen").style.display = "none";
             document.getElementById("game-screen").style.display = "block";
@@ -393,7 +417,11 @@
 
         function showQuestion() {
             const question = questions[currentQuestion];
+            const isThreePly = question.type === "3ply";
 
+            if (isThreePly) {
+                currentMoveIndex = 0;
+            }
             document.getElementById("show-answer-button").style.display = "none";
             document.getElementById("show-answer-button").disabled = false;
             document.getElementById("retry-question-button").style.display = "none";
@@ -427,8 +455,11 @@
             document.getElementById("question").textContent =
                 question.question;
 
-            showChoices(question);
-
+            if (question.type !== "3ply") {
+                showChoices(question);
+            } else {
+                document.getElementById("choices").innerHTML = "";
+            }
             document.getElementById("result").textContent = "";
             document.getElementById("explanation").textContent = "";
             document.getElementById("next-button").style.display = "none";
@@ -784,10 +815,16 @@
                     userMove
                 );
 
+                const question = questions[currentQuestion];
+
+                const correctMove = question.type === "3ply"
+                    ? question.moves[currentMoveIndex]
+                    : question.move;
+
                 const isCorrect =
                     shogiQuestion.isCorrectMove(
                         userMove,
-                        questions[currentQuestion].move
+                        correctMove
                     );
 
                 console.log("正解:", isCorrect);
@@ -1019,10 +1056,16 @@
                     userMove
                 );
 
+                const question = questions[currentQuestion];
+
+                const correctMove = question.type === "3ply"
+                    ? question.moves[currentMoveIndex]
+                    : question.move;
+
                 const isCorrect =
                     shogiQuestion.isCorrectMove(
                         userMove,
-                        questions[currentQuestion].move
+                        correctMove
                     );
 
                 console.log("正解:", isCorrect);
@@ -1197,6 +1240,71 @@
             const buttons =
                 document.querySelectorAll("#choices button");
 
+            // 3手読み問題
+            if (question.type === "3ply") {
+
+                // 不正解
+                if (!isCorrect) {
+                    document.getElementById("result").textContent =
+                        "不正解！";
+
+                    questionResults.push({
+                        id: question.id,
+                        correct: false
+                    });
+
+                    correctMoveHint = question.moves[currentMoveIndex];
+
+                    finishQuestion(question, buttons);
+
+                    showBoardFromShogi();
+                    showHandsFromShogi();
+
+                    return;
+                }
+
+                // 1手目正解
+                if (currentMoveIndex === 0) {
+                    currentMoveIndex = 1;
+
+                    executeThreePlyOpponentMove(question);
+
+                    currentMoveIndex = 2;
+
+                    selectedSquare = null;
+                    selectedHandPiece = null;
+                    pendingBoardMove = null;
+                    legalMoves = [];
+                    legalDrops = [];
+
+                    showBoardFromShogi();
+                    showHandsFromShogi();
+
+                    return;
+                }
+
+                // 3手目正解
+                if (currentMoveIndex === 2) {
+                    document.getElementById("result").textContent =
+                        "正解！";
+
+                    correctCount++;
+
+                    questionResults.push({
+                        id: question.id,
+                        correct: true
+                    });
+
+                    finishQuestion(question, buttons);
+
+                    showBoardFromShogi();
+                    showHandsFromShogi();
+
+                    return;
+                }
+            }
+
+            // 通常の1手問題
             selectedSquare = null;
             selectedHandPiece = null;
             pendingBoardMove = null;
@@ -1204,7 +1312,10 @@
             legalDrops = [];
 
             if (isCorrect) {
-                const isMate = shogiQuestion.isCheckmate(currentShogiBoard);
+                const isMate = shogiQuestion.isCheckmate(
+                    currentShogiBoard
+                );
+
                 document.getElementById("result").textContent =
                     isMate ? "正解！（詰み）" : "正解！";
 
@@ -1215,20 +1326,19 @@
                     correct: true
                 });
             } else {
-                document.getElementById("result").textContent = "不正解！";
+                document.getElementById("result").textContent =
+                    "不正解！";
 
                 questionResults.push({
                     id: question.id,
                     correct: false
                 });
 
-                // 問題開始時の盤面に戻す
                 currentShogiBoard = shogiBoard.createShogiBoard(
                     question,
                     ShogiJS
                 );
 
-                // 正解手を表示
                 correctMoveHint = question.move;
             }
 
@@ -1237,6 +1347,61 @@
             showBoardFromShogi();
             showHandsFromShogi();
         }
+        function executeThreePlyOpponentMove(question) {
+            const move = question.moves[1];
+
+            try {
+                if (move.from_hand) {
+                    const owner = move.piece.charAt(0);
+
+                    const color =
+                        owner === "S"
+                            ? ShogiJS.Color.Black
+                            : ShogiJS.Color.White;
+
+                    const pieceName = move.piece.substring(1);
+
+                    const pieceKind =
+                        Object.entries(
+                            shogiBoard.PIECE_NAME_MAP
+                        ).find(([, name]) => name === pieceName);
+
+                    if (!pieceKind) {
+                        throw new Error(
+                            `持ち駒の種類を特定できません: ${pieceName}`
+                        );
+                    }
+
+                    currentShogiBoard.drop(
+                        move.to[0],
+                        move.to[1],
+                        Number(pieceKind[0]),
+                        color
+                    );
+
+                } else {
+                    currentShogiBoard.move(
+                        move.from[0],
+                        move.from[1],
+                        move.to[0],
+                        move.to[1],
+                        move.promote || false
+                    );
+                }
+
+                console.log(
+                    "相手の自動着手:",
+                    move
+                );
+
+            } catch (error) {
+                console.error(
+                    "相手の自動着手に失敗しました:",
+                    error
+                );
+            }
+        }
+
         function nextQuestion() {
             currentQuestion++;
 
@@ -1367,7 +1532,88 @@
         function showCorrectMove() {
             const question = questions[currentQuestion];
 
-            if (!question || !question.move) return;
+            if (!question) return;
+
+            // 3手読み問題
+            if (question.type === "3ply") {
+                currentShogiBoard = shogiBoard.createShogiBoard(
+                    question,
+                    ShogiJS
+                );
+
+                try {
+                    question.moves.forEach(move => {
+                        if (move.from_hand) {
+                            const color =
+                                move.piece.startsWith("S")
+                                    ? ShogiJS.Color.Black
+                                    : ShogiJS.Color.White;
+
+                            const kind =
+                                Object.entries(
+                                    shogiBoard.PIECE_NAME_MAP
+                                ).find(([key, value]) => {
+                                    return (
+                                        `S${value}` === move.piece ||
+                                        `G${value}` === move.piece
+                                    );
+                                })?.[0];
+
+                            if (!kind) {
+                                throw new Error(
+                                    `持ち駒の種類を特定できません: ${move.piece}`
+                                );
+                            }
+
+                            currentShogiBoard.drop(
+                                move.to[0],
+                                move.to[1],
+                                kind,
+                                color
+                            );
+
+                        } else {
+                            currentShogiBoard.move(
+                                move.from[0],
+                                move.from[1],
+                                move.to[0],
+                                move.to[1],
+                                move.promote || false
+                            );
+                        }
+                    });
+
+                    // 正解手のハイライトを解除
+                    correctMoveHint = null;
+
+                    // 選択状態を解除
+                    selectedSquare = null;
+                    selectedHandPiece = null;
+                    pendingBoardMove = null;
+                    legalMoves = [];
+                    legalDrops = [];
+
+                    currentMoveIndex = 2;
+
+                    showBoardFromShogi();
+                    showHandsFromShogi();
+
+                    // ボタンを無効化
+                    document.getElementById("show-answer-button").disabled =
+                        true;
+
+                } catch (error) {
+                    console.error(
+                        "3手の正解手を再生できません:",
+                        error
+                    );
+                }
+
+                return;
+            }
+
+            // 通常の1手問題
+            if (!question.move) return;
 
             // 問題開始時の盤面に戻す
             currentShogiBoard = shogiBoard.createShogiBoard(
