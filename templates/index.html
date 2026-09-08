@@ -158,16 +158,16 @@
         let correctMoveHint = null;
         let currentMoveIndex = 0;
         function startCategory(category) {
-            if (category === "すべて") {
-                questions = [...allQuestions];
-            } else {
-                questions = allQuestions.filter(
-                    question => question.category === category
-                );
-            }
+            // テスト問題を除外
+            const normalQuestions = allQuestions.filter(
+                question => question.isTest !== true
+            );
 
-            // 問題をランダムな順番に並べる
-            questions.sort(() => Math.random() - 0.5);
+            if (category === "すべて") {
+                questions = [...normalQuestions];
+            } else {
+                questions = [...normalQuestions];
+            }
 
             currentQuestion = 0;
             correctCount = 0;
@@ -208,6 +208,8 @@
                 );
 
             const reviewQuestions = allQuestions.filter(question => {
+                if (question.isTest === true) return false;
+
                 const result = history[String(question.id)];
                 return result && result.incorrect > 0;
             });
@@ -240,6 +242,8 @@
                 );
 
             const weakQuestions = allQuestions.filter(question => {
+                if (question.isTest === true) return false;
+
                 const result = history[String(question.id)];
 
                 if (!result) return false;
@@ -300,6 +304,9 @@
         }
 
         function showLearningStatus() {
+            const normalQuestions = allQuestions.filter(
+                question => question.isTest !== true
+            );
             const history =
                 JSON.parse(
                     localStorage.getItem("shodanRoadQuestionHistory") || "{}"
@@ -334,7 +341,7 @@
 
                 const rate = Math.round(result.correct / total * 100);
 
-                const question = allQuestions.find(
+                const question = normalQuestions.find(
                     question => String(question.id) === id
                 );
 
@@ -357,7 +364,7 @@
             const studiedCount = questionStats.length;
 
             document.getElementById("learning-summary").innerHTML = `
-                <p>学習済み：${studiedCount}問 / ${allQuestions.length}問</p>
+                <p>学習済み：${studiedCount}問 / ${normalQuestions.length}問</p>
                 <p>総回答数：${totalAnswers}回</p>
                 <p>正解数：${totalCorrect}回</p>
                 <p>正答率：${overallRate}%</p>
