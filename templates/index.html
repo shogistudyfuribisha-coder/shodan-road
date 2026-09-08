@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,15 +11,16 @@
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-LM9GCJ9CB6"></script>
     <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
+        window.dataLayer = window.dataLayer || [];
+        function gtag() {dataLayer.push(arguments);}
+        gtag('js', new Date());
 
-    gtag('config', 'G-LM9GCJ9CB6');
+        gtag('config', 'G-LM9GCJ9CB6');
     </script>
 
     <title>初段への道</title>
 </head>
+
 <body>
 
     <h1>初段への道</h1>
@@ -93,6 +95,13 @@
 
         <p id="question"></p>
 
+        <div id="hint-container">
+            <button id="hint-button" onclick="showHint()" style="display: none;">
+                ヒントを見る
+            </button>
+            <p id="hint-text" style="display: none;"></p>
+        </div>
+
         <div id="choices"></div>
 
         <p id="result"></p>
@@ -113,6 +122,9 @@
         <button id="restart-button" style="display: none;" onclick="restartGame()">
             もう一度挑戦
         </button>
+        <button id="single-question-back-button" onclick="backToLearningStatus()" style="display: none;">
+            学習状況に戻る
+        </button>
         <div id="history" style="display: none;">
             <h3>最高記録</h3>
             <p id="best-record"></p>
@@ -122,13 +134,14 @@
         </div>
     </div>
     <script>
-        const allQuestions = {{ questions | tojson }};
+        const allQuestions = {{questions | tojson }};
 
 
         let questions = [];
         let currentQuestion = 0;
         let correctCount = 0;
         let questionResults = [];
+        let singleQuestionMode = false;
         let currentShogiBoard = null;
         let selectedSquare = null;
         let pendingBoardMove = null;
@@ -151,13 +164,19 @@
             currentQuestion = 0;
             correctCount = 0;
             questionResults = [];
+            singleQuestionMode = false;
 
             document.getElementById("category-screen").style.display = "none";
             document.getElementById("game-screen").style.display = "block";
 
             showQuestion();
         }
+        function backToLearningStatus() {
+            singleQuestionMode = false;
 
+            document.getElementById("game-screen").style.display = "none";
+            showLearningStatus();
+        }
         function startReview() {
             const history =
                 JSON.parse(
@@ -181,6 +200,8 @@
 
             currentQuestion = 0;
             correctCount = 0;
+            questionResults = [];
+            singleQuestionMode = false;
 
             document.getElementById("category-screen").style.display = "none";
             document.getElementById("game-screen").style.display = "block";
@@ -221,6 +242,7 @@
             currentQuestion = 0;
             correctCount = 0;
             questionResults = [];
+            singleQuestionMode = false;
 
             document.getElementById("category-screen").style.display = "none";
             document.getElementById("learning-status-screen").style.display = "none";
@@ -244,6 +266,7 @@
             currentQuestion = 0;
             correctCount = 0;
             questionResults = [];
+            singleQuestionMode = true;
 
             document.getElementById("category-screen").style.display = "none";
             document.getElementById("learning-status-screen").style.display = "none";
@@ -370,9 +393,21 @@
 
         function showQuestion() {
             const question = questions[currentQuestion];
+
             document.getElementById("show-answer-button").style.display = "none";
             document.getElementById("show-answer-button").disabled = false;
             document.getElementById("retry-question-button").style.display = "none";
+
+            // ヒントをリセット
+            document.getElementById("hint-button").style.display = "none";
+            document.getElementById("hint-text").style.display = "none";
+            document.getElementById("hint-text").textContent = "";
+
+            // ヒントがある問題だけ「ヒントを見る」を表示
+            if (question.hint) {
+                document.getElementById("hint-button").style.display = "block";
+            }
+
             currentShogiBoard =
                 shogiBoard.createShogiBoard(question, ShogiJS);
 
@@ -398,6 +433,21 @@
             document.getElementById("explanation").textContent = "";
             document.getElementById("next-button").style.display = "none";
             document.getElementById("restart-button").style.display = "none";
+            document.getElementById("single-question-back-button").style.display =
+                "none";
+        }
+
+        function showHint() {
+            const question = questions[currentQuestion];
+
+            document.getElementById("hint-text").textContent =
+                question.hint;
+
+            document.getElementById("hint-text").style.display =
+                "block";
+
+            document.getElementById("hint-button").style.display =
+                "none";
         }
 
         function showChoices(question) {
@@ -412,7 +462,7 @@
 
                 button.textContent = choice;
 
-                button.onclick = function() {
+                button.onclick = function () {
                     checkAnswer(index);
                 };
 
@@ -534,7 +584,7 @@
                         }
                     }
 
-                    button.onclick = function() {
+                    button.onclick = function () {
                         selectHandPiece(kind, color);
                     };
 
@@ -552,7 +602,7 @@
             for (let row = 0; row < 9; row++) {
                 for (let col = 0; col < 9; col++) {
 
-                    const { x, y } =
+                    const {x, y} =
                         shogiBoard.questionBoardToShogi(row, col);
 
                     const piece =
@@ -611,7 +661,7 @@
                             }
                         }
                     }
-                    square.onclick = function() {
+                    square.onclick = function () {
                         selectSquare(x, y);
                     };
 
@@ -785,7 +835,7 @@
                     selectedHandPiece = null;
                     legalDrops = [];
 
-                    selectedSquare = { x, y };
+                    selectedSquare = {x, y};
 
                     legalMoves = shogiQuestion.getLegalMovesFrom(
                         currentShogiBoard,
@@ -825,7 +875,7 @@
                     return;
                 }
 
-                selectedSquare = { x, y };
+                selectedSquare = {x, y};
 
                 legalDrops = [];
 
@@ -841,7 +891,7 @@
                 piece &&
                 piece.color === currentShogiBoard.turn
             ) {
-                selectedSquare = { x, y };
+                selectedSquare = {x, y};
 
                 legalMoves = [];
 
@@ -924,7 +974,7 @@
 
             executeBoardMove(from, to, false);
         }
-        
+
         function executeBoardMove(from, to, promote) {
             // 問題回答済みなら操作しない
             if (
@@ -1010,7 +1060,7 @@
 
             promoteButton.textContent = "成る";
 
-            promoteButton.onclick = function() {
+            promoteButton.onclick = function () {
                 const move = pendingBoardMove;
 
                 choicesElement.innerHTML = "";
@@ -1033,7 +1083,7 @@
 
             noPromoteButton.textContent = "成らない";
 
-            noPromoteButton.onclick = function() {
+            noPromoteButton.onclick = function () {
                 const move = pendingBoardMove;
 
                 choicesElement.innerHTML = "";
@@ -1047,7 +1097,7 @@
 
             choicesElement.appendChild(noPromoteButton);
         }
-        
+
         function checkAnswer(choice) {
             const question = questions[currentQuestion];
 
@@ -1128,6 +1178,18 @@
                     "block";
             }
 
+            // 個別確認モードでは、この1問で終了
+            if (singleQuestionMode) {
+                document.getElementById("next-button").style.display =
+                    "none";
+
+                document.getElementById("single-question-back-button").style.display =
+                    "block";
+
+                return;
+            }
+
+            // 通常モードでは次の問題へ
             document.getElementById("next-button").style.display =
                 "block";
         }
@@ -1264,6 +1326,18 @@
             document.getElementById("question-number").textContent =
                 "結果";
 
+            // 問題回答中のボタンを非表示
+            document.getElementById("show-answer-button").style.display =
+                "none";
+            document.getElementById("retry-question-button").style.display =
+                "none";
+            document.getElementById("next-button").style.display =
+                "none";
+            document.getElementById("restart-button").style.display =
+                "block";
+            document.getElementById("single-question-back-button").style.display =
+                "none";
+
             document.getElementById("question").textContent =
                 `${questions.length}問中${correctCount}問正解！`;
 
@@ -1277,10 +1351,6 @@
 
             document.getElementById("explanation").textContent = "";
 
-            document.getElementById("next-button").style.display =
-                "none";
-            document.getElementById("restart-button").style.display =
-                "block";
             const history = saveHistory(rate);
             saveQuestionHistory();
 
@@ -1369,4 +1439,5 @@
         }
     </script>
 </body>
+
 </html>
