@@ -32,7 +32,7 @@
             <button onclick="startCategory('すべて')">すべて</button>
             <button onclick="startCategory('手筋')">手筋</button>
             <button onclick="startCategory('詰めろ・寄せ')">詰めろ・寄せ</button>
-            <button onclick="startCategory('テスト')">テスト</button>
+            <!-- <button onclick="startCategory('テスト')">テスト</button> -->
         </div>
 
         <h2>読みのトレーニング</h2>
@@ -60,7 +60,9 @@
         <button onclick="backToCategoryScreen()">カテゴリ選択に戻る</button>
     </div>
     <div id="game-screen" style="display: none;">
-
+        <button id="back-to-menu-button" onclick="backToMenu()">
+            ← メニューに戻る
+        </button>
         <h2 id="question-number"></h2>
 
         <div id="gote-hand"></div>
@@ -125,9 +127,15 @@
                 次の問題
             </button>
         </div>
-        <button id="restart-button" style="display: none;" onclick="restartGame()">
-            もう一度挑戦
-        </button>
+        <div id="finish-action-buttons" style="display: none;">
+            <button id="restart-button" onclick="restartGame()">
+                もう一度挑戦
+            </button>
+
+            <button id="back-to-menu-after-finish-button" onclick="backToMenu()">
+                メニューに戻る
+            </button>
+        </div>
         <button id="single-question-back-button" onclick="backToLearningStatus()" style="display: none;">
             学習状況に戻る
         </button>
@@ -150,6 +158,7 @@
         let questionResults = [];
         let singleQuestionMode = false;
         let currentShogiBoard = null;
+        let currentCategory = null;
         let selectedSquare = null;
         let pendingBoardMove = null;
         let selectedHandPiece = null;
@@ -157,23 +166,72 @@
         let legalDrops = [];
         let correctMoveHint = null;
         let currentMoveIndex = 0;
+        function backToMenu() {
+            document.getElementById("game-screen").style.display = "none";
+            document.getElementById("category-screen").style.display = "block";
+
+            document.getElementById("finish-action-buttons").style.display = "none";
+        }
         function startCategory(category) {
-            // テスト問題を除外
+            currentCategory = category;
+
             const normalQuestions = allQuestions.filter(
                 question => question.isTest !== true
             );
 
-            if (category === "すべて") {
-                questions = [...normalQuestions];
+            const params = new URLSearchParams(window.location.search);
+            const reverse = params.get("reverse") === "true";
+
+            const shogiTechniqueThemes = [
+                "桂馬の手筋",
+                "香車の手筋",
+                "歩の手筋",
+                "銀の手筋",
+                "金の手筋",
+                "角の手筋",
+                "飛車の手筋",
+                "駒別手筋"
+            ];
+
+            const attackThemes = [
+                "詰めろ",
+                "必至",
+                "寄せ",
+                "囲い崩し",
+                "穴熊崩し",
+                "美濃囲い崩し",
+                "船囲い崩し"
+            ];
+
+            let filteredQuestions;
+
+            if (category === "手筋") {
+                filteredQuestions = normalQuestions.filter(question =>
+                    question.themes?.some(theme =>
+                        shogiTechniqueThemes.includes(theme)
+                    )
+                );
+            } else if (category === "詰めろ・寄せ") {
+                filteredQuestions = normalQuestions.filter(question =>
+                    question.themes?.some(theme =>
+                        attackThemes.includes(theme)
+                    )
+                );
             } else {
-                questions = [...normalQuestions];
+                filteredQuestions = normalQuestions;
             }
+
+            questions = reverse
+                ? [...filteredQuestions].reverse()
+                : [...filteredQuestions];
 
             currentQuestion = 0;
             correctCount = 0;
             questionResults = [];
             singleQuestionMode = false;
 
+            document.getElementById("finish-action-buttons").style.display = "none";
+            document.getElementById("history").style.display = "none";
             document.getElementById("category-screen").style.display = "none";
             document.getElementById("game-screen").style.display = "block";
 
@@ -470,7 +528,6 @@
             document.getElementById("result").textContent = "";
             document.getElementById("explanation").textContent = "";
             document.getElementById("next-button").style.display = "none";
-            document.getElementById("restart-button").style.display = "none";
             document.getElementById("single-question-back-button").style.display =
                 "none";
         }
@@ -1495,6 +1552,8 @@
                 "block";
         }
         function showResult() {
+            console.log("showResult実行");
+
             document.getElementById("question-number").textContent =
                 "結果";
 
@@ -1505,8 +1564,8 @@
                 "none";
             document.getElementById("next-button").style.display =
                 "none";
-            document.getElementById("restart-button").style.display =
-                "block";
+            document.getElementById("finish-action-buttons").style.display =
+                "flex";
             document.getElementById("single-question-back-button").style.display =
                 "none";
 
@@ -1532,9 +1591,7 @@
             showHistory(history);
         }
         function restartGame() {
-
-            // 問題データを最初の状態に戻すためにページを再読み込み
-            location.reload();
+            startCategory(currentCategory);
         }
         function showCorrectMove() {
             const question = questions[currentQuestion];
