@@ -12,7 +12,7 @@
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-53ZKB0C3P1"></script>
     <script>
         window.dataLayer = window.dataLayer || [];
-        function gtag() {dataLayer.push(arguments);}
+        function gtag() { dataLayer.push(arguments); }
         gtag('js', new Date());
 
         gtag('config', 'G-53ZKB0C3P1');
@@ -148,8 +148,8 @@
         </div>
     </div>
     <script>
-        const allQuestions = {{questions | tojson }};
-        const threePlyQuestions = {{three_ply_questions | tojson }};
+        const allQuestions = {{ questions | tojson }};
+        const threePlyQuestions = {{ three_ply_questions | tojson }};
 
 
         let questions = [];
@@ -531,6 +531,7 @@
             document.getElementById("next-button").style.display = "none";
             document.getElementById("single-question-back-button").style.display =
                 "none";
+            document.getElementById("result").classList.remove("is-correct");
         }
 
         function showHint() {
@@ -698,7 +699,7 @@
             for (let row = 0; row < 9; row++) {
                 for (let col = 0; col < 9; col++) {
 
-                    const {x, y} =
+                    const { x, y } =
                         shogiBoard.questionBoardToShogi(row, col);
 
                     const piece =
@@ -937,7 +938,7 @@
                     selectedHandPiece = null;
                     legalDrops = [];
 
-                    selectedSquare = {x, y};
+                    selectedSquare = { x, y };
 
                     legalMoves = shogiQuestion.getLegalMovesFrom(
                         currentShogiBoard,
@@ -977,7 +978,7 @@
                     return;
                 }
 
-                selectedSquare = {x, y};
+                selectedSquare = { x, y };
 
                 legalDrops = [];
 
@@ -993,7 +994,7 @@
                 piece &&
                 piece.color === currentShogiBoard.turn
             ) {
-                selectedSquare = {x, y};
+                selectedSquare = { x, y };
 
                 legalMoves = [];
 
@@ -1245,9 +1246,9 @@
             );
 
             const isMate = shogiQuestion.isCheckmate(currentShogiBoard);
-            document.getElementById("result").textContent =
-                isMate ? "正解！（詰み）" : "正解！";
-
+            const resultEl = document.getElementById("result");
+            resultEl.textContent = isMate ? "正解！（詰み）" : "正解！";
+            resultEl.classList.add("is-correct")
             showBoardFromShogi();
             showHandsFromShogi();
         }
@@ -1352,7 +1353,7 @@
                 if (currentMoveIndex === 2) {
                     document.getElementById("result").textContent =
                         "正解！";
-
+                    resultEl.classList.add("is-correct");
                     correctCount++;
 
                     questionResults.push({
@@ -1383,6 +1384,8 @@
 
                 document.getElementById("result").textContent =
                     isMate ? "正解！（詰み）" : "正解！";
+
+                resultEl.classList.add("is-correct");
 
                 correctCount++;
 
