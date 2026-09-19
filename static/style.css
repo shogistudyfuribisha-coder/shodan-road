@@ -108,6 +108,7 @@ h2 {
 #choices button.correct {
     background: #d4edda;
     border-color: #28a745;
+    color: #333;
 }
 
 #choices button.incorrect {
